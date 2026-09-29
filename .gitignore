@@ -1,0 +1,35 @@
+# Environment & Secrets
+.env
+.env.local
+
+# Candidate PII & Generated Workspaces (Strict Isolation)
+workspace/
+
+# Database & Local Data
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+.pytest-tmp/
+/.uv-cache*/
+*.egg-info/
+dist/
+build/
+
+# Optional third-party Sepia skills; each user installs the upstream package.
+.agents/skills/sepia/
+.agents/skills/sepia-*/
+
+# Node & Frontend
+node_modules/
+frontend/dist/
+frontend/node_modules/
+.DS_Store
+Thumbs.db

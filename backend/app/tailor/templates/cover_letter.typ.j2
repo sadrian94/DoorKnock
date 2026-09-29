@@ -1,0 +1,75 @@
+// Typst Cover Letter Template for DoorKnock (Executive Serif Format)
+#set page(
+  paper: "us-letter",
+  margin: (x: 0.85in, top: 0.7in, bottom: 0.7in),
+)
+#set text(
+  font: ("Times New Roman", "TeX Gyre Termes", "Liberation Serif"),
+  size: 10.2pt,
+  fill: rgb("#000000"),
+  spacing: 120%,
+)
+#set par(
+  justify: false,
+  leading: 0.55em,
+)
+#show link: set text(fill: rgb("#000000"))
+
+// -------------------------------------------------------------
+// SENDER HEADER (Matches Jake's Resume Header)
+// -------------------------------------------------------------
+#align(center)[
+  #text(weight: "bold", size: 19pt)[{{ candidate.name | typst_markup }}] \
+  #v(2.5pt)
+  #text(size: 8.8pt)[
+    {{ candidate.location | typst_markup }} #text(weight: "bold")[|]
+    {{ candidate.phone | typst_markup }} #text(weight: "bold")[|]
+    #let email = {{ candidate.email | typst_string }}
+    #link("mailto:" + email)[#email] #text(weight: "bold")[|]
+    #let linkedin = {{ candidate.linkedin | typst_string }}
+    #link("https://" + linkedin)[#linkedin] #text(weight: "bold")[|]
+    #let github = {{ candidate.github | typst_string }}
+    #link("https://" + github)[#github]
+  ]
+]
+
+#v(6pt)
+#line(length: 6.8in, stroke: 0.5pt + black)
+#v(14pt)
+
+// -------------------------------------------------------------
+// RECIPIENT & DATE BLOCK
+// -------------------------------------------------------------
+#grid(
+  columns: (1fr, auto),
+  [
+    #text(weight: "bold")[{{ letter.recipient_title | typst_markup }}] \
+    {{ letter.company_name | typst_markup }}
+    {% if letter.company_location %} \
+    {{ letter.company_location | typst_markup }}{% endif %}
+  ],
+  [
+    #text()[{{ letter.date | typst_markup }}]
+  ]
+)
+
+#v(14pt)
+#text(weight: "bold", size: 10.5pt)[RE: Application for {{ letter.subject_role | typst_markup }}]
+
+#v(10pt)
+Dear {{ letter.salutation | typst_markup }},
+
+#v(8pt)
+{% for p in letter.paragraphs %}
+{{ p | typst_markup }}
+{% if not loop.last %}
+
+#v(8pt)
+{% endif %}
+{% endfor %}
+
+#v(10pt)
+Sincerely,
+
+#v(16pt)
+#text(weight: "bold", size: 10.5pt)[{{ candidate.name | typst_markup }}]

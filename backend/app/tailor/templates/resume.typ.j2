@@ -1,0 +1,180 @@
+#let page-margin-y = {{ layout.margin_y if layout and layout.margin_y else "0.38in" }}
+#let page-margin-x = {{ layout.margin_x if layout and layout.margin_x else "0.48in" }}
+#let base-font-size = {{ layout.font_size if layout and layout.font_size else "9.3pt" }}
+#let par-leading = {{ layout.leading if layout and layout.leading else "0.38em" }}
+#let par-spacing = {{ layout.spacing if layout and layout.spacing else "0.48em" }}
+
+#set page(
+  paper: "us-letter",
+  margin: (x: page-margin-x, top: page-margin-y, bottom: page-margin-y),
+)
+#set text(
+  font: ("Times New Roman", "Liberation Serif", "TeX Gyre Termes"),
+  size: base-font-size,
+  fill: rgb("#000000"),
+)
+#set par(
+  justify: false,
+  leading: par-leading,
+  spacing: par-spacing,
+)
+#set list(
+  marker: [•],
+  spacing: 2.6pt,
+  body-indent: 5pt,
+  indent: 0pt,
+)
+#show link: set text(fill: rgb("#000000"))
+
+// Section Heading (Jake's Resume style: Bold Uppercase with full-width underline)
+#let section-heading(title) = [
+  #v(4.0pt)
+  #text(weight: "bold", size: 9.8pt)[#upper(title)]
+  #v(-3.5pt)
+  #line(length: 100%, stroke: 0.5pt + black)
+  #v(2.0pt)
+]
+
+// Experience Entry (Line 1: Company [Bold] / Dates; Line 2: Title [Italic] / Location [Italic])
+#let experience-header(company, dates, title, location) = [
+  #grid(
+    columns: (1fr, auto),
+    row-gutter: 2.5pt,
+    align: (left, right),
+    text(weight: "bold")[#company],
+    text()[#dates],
+    text(style: "italic")[#title],
+    text(style: "italic")[#location],
+  )
+]
+
+// Project Entry (Name only, hyperlinked if url)
+#let project-header(name, url: none) = [
+  #if url != none and url != "" [
+    #link(url)[#text(weight: "bold")[#name]]
+  ] else [
+    #text(weight: "bold")[#name]
+  ]
+]
+
+// Education Entry (Line 1: Institution [Bold] / Year; Line 2: Degree [Italic] / Location [Italic]; Line 3: Focus)
+#let education-entry(institution, dates, degree, location, focus: none) = [
+  #grid(
+    columns: (1fr, auto),
+    row-gutter: 2.5pt,
+    align: (left, right),
+    text(weight: "bold")[#institution],
+    text()[#dates],
+    text(style: "italic")[#degree],
+    text(style: "italic")[#location],
+  )
+  #if focus != none and focus != "" [
+    #v(0.5pt)
+    #text(size: 8.5pt, style: "italic", fill: rgb("#333333"))[Focus: #focus]
+  ]
+]
+
+// -------------------------------------------------------------
+// HEADER (Jake's Centered Clean Format)
+// -------------------------------------------------------------
+#align(center)[
+  #text(weight: "bold", size: 19pt)[{{ candidate.name | typst_markup }}] \
+  #v(2.5pt)
+  #text(weight: "bold", size: 9.6pt)[{{ resume.target_role | typst_markup }}] \
+  #v(2pt)
+  #text(size: 8.6pt)[
+    {{ candidate.location | typst_markup }} #text(weight: "bold")[|]
+    {{ candidate.phone | typst_markup }} #text(weight: "bold")[|]
+    #let email = {{ candidate.email | typst_string }}
+    #link("mailto:" + email)[#email] #text(weight: "bold")[|]
+    #let linkedin = {{ candidate.linkedin | typst_string }}
+    #link("https://" + linkedin)[#linkedin] #text(weight: "bold")[|]
+    #let github = {{ candidate.github | typst_string }}
+    #link("https://" + github)[#github]
+  ] \
+  #v(1.5pt)
+  #text(size: 8.4pt, style: "italic", fill: rgb("#222222"))[{{ candidate.work_authorization | typst_markup }}]
+]
+
+// -------------------------------------------------------------
+// SUMMARY
+// -------------------------------------------------------------
+#section-heading("Summary")
+{{ resume.summary | typst_markup }}
+
+// -------------------------------------------------------------
+// EXPERIENCE
+// -------------------------------------------------------------
+{% if resume.experiences %}
+#section-heading("Experience")
+{% for exp in resume.experiences %}
+#experience-header(
+  {{ exp.company | typst_string }},
+  {{ exp.dates | typst_string }},
+  {{ exp.title | typst_string }},
+  {{ exp.location | typst_string }},
+)
+#v(1pt)
+#list(
+{% for b in exp.bullets %}
+  [{{ b | typst_markup }}],
+{% endfor %}
+)
+#v(2.5pt)
+{% endfor %}
+{% endif %}
+
+// -------------------------------------------------------------
+// SKILLS
+// -------------------------------------------------------------
+{% if resume.skills %}
+#section-heading("Skills")
+#v(0.5pt)
+{% for sk in resume.skills %}
+#text(weight: "bold")[{{ sk.category | typst_markup }}:] {{ (sk['items'] if 'items' in sk else sk.skills) | typst_markup }} \
+#v(1pt)
+{% endfor %}
+{% endif %}
+
+// -------------------------------------------------------------
+// PROJECTS
+// -------------------------------------------------------------
+{% if resume.projects %}
+#section-heading("Projects")
+{% for proj in resume.projects %}
+#project-header(
+  {{ proj.name | typst_string }},
+  url: {% if proj.url %}{{ proj.url | typst_string }}{% else %}none{% endif %},
+)
+#v(1pt)
+#list(
+{% for b in proj.bullets %}
+  [{{ b | typst_markup }}],
+{% endfor %}
+)
+#v(2.5pt)
+{% endfor %}
+{% endif %}
+
+// -------------------------------------------------------------
+// EDUCATION
+// -------------------------------------------------------------
+{% if resume.education %}
+#section-heading("Education")
+{% for edu in resume.education %}
+#education-entry(
+  {{ edu.institution | typst_string }},
+  {{ edu.year | typst_string }},
+  {{ edu.degree | typst_string }},
+  {{ edu.location | typst_string }},
+  focus: {% if edu.focus %}{{ edu.focus | typst_string }}{% else %}none{% endif %},
+)
+#v(2.0pt)
+{% endfor %}
+{% endif %}
+
+{% if resume.certifications %}
+#section-heading("Certifications")
+#v(1.0pt)
+{{ resume.certifications | typst_markup }}
+{% endif %}
