@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timezone
+from ..clock import local_today
 from pathlib import Path
 from typing import Optional
 
@@ -49,7 +49,7 @@ def generate_application_workspace_dirname(
     Format: YYYY-MM-DD-company-position
     e.g.: 2026-09-18-brinkmann-constructors-data-analyst
     """
-    d = date_str or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    d = date_str or local_today().isoformat()
     comp_slug = sanitize_slug(company, max_len=30) or "company"
     title_slug = sanitize_slug(title, max_len=35) or "job"
     return f"{d}-{comp_slug}-{title_slug}"

@@ -25,3 +25,11 @@ test('places missing scores and dates last in either direction', () => {
   const withoutDate = [{ id: 'missing', company: 'Delta', created_at: '' }, ...cards];
   assert.equal(sortCards(withoutDate, 'oldest', 'created_at').at(-1)?.id, 'missing');
 });
+
+test('compares legacy SQLite UTC and explicit-offset instants in the same clock', () => {
+  const mixed = [
+    { id: 'older', company: 'Example', created_at: '2026-09-30 02:00:00' },
+    { id: 'newer', company: 'Example', created_at: '2026-09-30T03:00:00Z' },
+  ];
+  assert.deepEqual(sortCards(mixed, 'newest', 'created_at').map(card => card.id), ['newer', 'older']);
+});

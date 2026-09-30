@@ -1,7 +1,6 @@
 import asyncio
 import json
 import sqlite3
-from datetime import datetime
 from pathlib import Path
 import sys
 
@@ -16,6 +15,7 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 from app.config import DOORKNOCK_DB_PATH
+from app.clock import utc_now
 from app.ai.provider import get_ai_client
 from app.ai.analyzer import analyze_job_posting
 
@@ -63,7 +63,7 @@ async def rematch_all_saved_jobs():
         score = analysis.get("suitability_score")
         reason = analysis.get("suitability_reason")
         analysis_str = json.dumps(analysis, ensure_ascii=False)
-        now_str = datetime.now().isoformat()
+        now_str = utc_now().isoformat()
 
         cur.execute("""
             UPDATE jobs

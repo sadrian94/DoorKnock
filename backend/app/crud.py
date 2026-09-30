@@ -1,6 +1,7 @@
 import uuid
 import json
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
+from .clock import utc_now, local_now, local_today, local_date_of
 from typing import List, Dict, Any, Optional
 from .database import get_db
 
@@ -34,7 +35,7 @@ def get_saved_jobs(search: Optional[str] = None, limit: int = 100, offset: int =
             s = f"%{search}%"
             params.extend([s, s, s])
         
-        query += " ORDER BY j.suitability_score DESC NULLS LAST, j.created_at DESC LIMIT ? OFFSET ?"
+        query += " ORDER BY j.suitability_score DESC NULLS LAST, julianday(j.created_at) DESC LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         
         cursor = conn.execute(query, params)
@@ -54,24 +55,24 @@ def get_job_by_id(job_id: str) -> Optional[Dict[str, Any]]:
         job["application"] = dict(app_row) if app_row else None
         
         # Get contacts
-        contacts_cursor = conn.execute("SELECT * FROM contacts WHERE job_id = ? ORDER BY created_at ASC", (job_id,))
+        contacts_cursor = conn.execute("SELECT * FROM contacts WHERE job_id = ? ORDER BY julianday(created_at) ASC", (job_id,))
         contacts = [dict(r) for r in contacts_cursor.fetchall()]
         
         # For each contact, get messages
         for c in contacts:
-            msg_cursor = conn.execute("SELECT * FROM outreach_messages WHERE contact_id = ? ORDER BY created_at ASC", (c["id"],))
+            msg_cursor = conn.execute("SELECT * FROM outreach_messages WHERE contact_id = ? ORDER BY julianday(created_at) ASC", (c["id"],))
             c["messages"] = [dict(m) for m in msg_cursor.fetchall()]
         
         job["contacts"] = contacts
         
         # Get artifacts
-        art_cursor = conn.execute("SELECT * FROM job_artifacts WHERE job_id = ? ORDER BY created_at DESC", (job_id,))
+        art_cursor = conn.execute("SELECT * FROM job_artifacts WHERE job_id = ? ORDER BY julianday(created_at) DESC", (job_id,))
         job["artifacts"] = [dict(a) for a in art_cursor.fetchall()]
         
         # Get timeline if application exists
         if job["application"]:
             timeline_cursor = conn.execute(
-                "SELECT * FROM timeline_events WHERE application_id = ? ORDER BY occurred_at DESC",
+                "SELECT * FROM timeline_events WHERE application_id = ? ORDER BY julianday(occurred_at) DESC",
                 (job["application"]["id"],)
             )
             job["timeline"] = [dict(t) for t in timeline_cursor.fetchall()]
@@ -104,7 +105,7 @@ def get_kanban_board() -> Dict[str, Any]:
                 (SELECT COUNT(*) FROM outreach_messages m JOIN contacts c ON m.contact_id = c.id WHERE c.job_id = j.id) as message_count
             FROM applications app
             JOIN jobs j ON j.id = app.job_id
-            ORDER BY app.updated_at DESC
+            ORDER BY julianday(app.updated_at) DESC
         """
         cursor = conn.execute(query)
         rows = cursor.fetchall()
@@ -122,7 +123,7 @@ def get_kanban_board() -> Dict[str, Any]:
 
 def get_dashboard_summary() -> Dict[str, Any]:
     """Read-only pipeline measures for the local dashboard."""
-    today = date.today()
+    today = local_today()
     first_week = today - timedelta(days=today.weekday() + 7 * 11)
     weeks = {
         (first_week + timedelta(weeks=index)).isoformat(): 0
@@ -200,16 +201,17 @@ def transition_application_stage(application_id: str, to_stage: str, outcome: Op
         if not app:
             return None
         from_stage = app["current_stage"]
-        now_str = datetime.now().isoformat()
+        now_str = utc_now().isoformat()
+        today = date.fromisoformat(local_date_of(now_str))
         
         applied_date = app["applied_date"]
         if to_stage == "applied" and not applied_date:
-            applied_date = date.today().isoformat()
+            applied_date = today.isoformat()
             
         # Calculate next follow up date if stage is applied or knocked
         next_followup = app["next_followup_date"]
         if to_stage in ("applied", "knocked"):
-            next_followup = (date.today() + timedelta(days=3)).isoformat()
+            next_followup = (today + timedelta(days=3)).isoformat()
         elif to_stage in ("closed", "offer"):
             next_followup = None
             
@@ -263,7 +265,7 @@ def create_application_for_job(job_id: str, stage: str = "saved") -> Dict[str, A
             return dict(existing)
             
         app_id = str(uuid.uuid4())
-        now_str = datetime.now().isoformat()
+        now_str = utc_now().isoformat()
         conn.execute("""
             INSERT INTO applications (id, job_id, current_stage, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?)
@@ -288,7 +290,7 @@ def add_contact(
 ) -> Dict[str, Any]:
     with get_db() as conn:
         contact_id = str(uuid.uuid4())
-        now_str = datetime.now().isoformat()
+        now_str = utc_now().isoformat()
         conn.execute("""
             INSERT INTO contacts (id, job_id, name, role_title, contact_type, linkedin_url, email, notes, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -343,7 +345,7 @@ def add_outreach_message(
 ) -> Dict[str, Any]:
     with get_db() as conn:
         msg_id = str(uuid.uuid4())
-        now_str = datetime.now().isoformat()
+        now_str = utc_now().isoformat()
         conn.execute("""
             INSERT INTO outreach_messages (id, contact_id, channel, archetype, subject, body, status, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -354,7 +356,7 @@ def add_outreach_message(
 
 def update_outreach_status(message_id: str, status: str, sent_at: Optional[str] = None) -> Optional[Dict[str, Any]]:
     with get_db() as conn:
-        now_str = datetime.now().isoformat()
+        now_str = utc_now().isoformat()
         if status == "sent" and not sent_at:
             sent_at = now_str
         conn.execute("""
@@ -368,22 +370,29 @@ def update_outreach_status(message_id: str, status: str, sent_at: Optional[str] 
 
 def get_stale_applications(days_dormant: int = 14) -> List[Dict[str, Any]]:
     with get_db() as conn:
-        cutoff = (datetime.now() - timedelta(days=days_dormant)).isoformat()
+        cutoff = (utc_now() - timedelta(days=days_dormant)).isoformat()
+        legacy_cutoff = (local_now().replace(tzinfo=None) - timedelta(days=days_dormant)).isoformat()
         query = """
             SELECT app.*, j.title, j.company, j.job_url
             FROM applications app
             JOIN jobs j ON j.id = app.job_id
             WHERE app.current_stage NOT IN ('closed', 'offer', 'saved')
-              AND app.updated_at <= ?
-            ORDER BY app.updated_at ASC
+              AND julianday(app.updated_at) <= julianday(
+                  CASE WHEN app.updated_at GLOB '????-??-??T??:??:??*'
+                            AND substr(app.updated_at, -1) != 'Z'
+                            AND instr(substr(app.updated_at, 20), '+') = 0
+                            AND instr(substr(app.updated_at, 20), '-') = 0
+                       THEN ? ELSE ? END)
+            ORDER BY julianday(app.updated_at) ASC
         """
-        cursor = conn.execute(query, (cutoff,))
+        # Old naive ISO timestamps have no recoverable zone. Compare their
+        # original wall clock to a local cutoff; never rewrite them as UTC.
+        cursor = conn.execute(query, (legacy_cutoff, cutoff))
         return [dict(r) for r in cursor.fetchall()]
 
 def get_upcoming_followups(days_ahead: int = 3) -> List[Dict[str, Any]]:
     with get_db() as conn:
-        today_str = date.today().isoformat()
-        target_str = (date.today() + timedelta(days=days_ahead)).isoformat()
+        target_str = (local_today() + timedelta(days=days_ahead)).isoformat()
         query = """
             SELECT app.*, j.title, j.company, j.job_url
             FROM applications app
@@ -398,7 +407,7 @@ def get_upcoming_followups(days_ahead: int = 3) -> List[Dict[str, Any]]:
 
 def update_job_company_recon(job_id: str, recon_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     with get_db() as conn:
-        now_str = datetime.now().isoformat()
+        now_str = utc_now().isoformat()
         recon_str = json.dumps(recon_data)
         conn.execute("""
             UPDATE jobs

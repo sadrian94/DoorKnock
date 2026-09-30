@@ -1,4 +1,4 @@
-from datetime import datetime
+from ..clock import utc_now
 from typing import Dict, Any, Optional
 from .provider import AIClient, get_ai_client
 
@@ -73,5 +73,5 @@ async def recon_company_and_department(
     )
 
     result = await client.generate_json(prompt=prompt, system_instruction=RECON_SYSTEM_INSTRUCTION)
-    result["researched_at"] = datetime.now().isoformat()
+    result["researched_at"] = utc_now().isoformat()
     return result

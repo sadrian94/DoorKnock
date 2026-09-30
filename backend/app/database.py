@@ -20,6 +20,29 @@ def init_db(db_path: Optional[Path] = None):
             conn.execute("ALTER TABLE jobs ADD COLUMN company_recon_json TEXT;")
         except Exception:
             pass
+        # Existing tables retain their original SQLite defaults. Normalize only
+        # newly inserted SQLite UTC defaults; leave historical values untouched.
+        for table, columns in {
+            "jobs": ("created_at", "updated_at"),
+            "job_artifacts": ("created_at", "updated_at"),
+            "contacts": ("created_at",),
+            "outreach_messages": ("created_at", "updated_at"),
+            "applications": ("created_at", "updated_at"),
+            "timeline_events": ("occurred_at",),
+            "gmail_application_messages": ("created_at",),
+            "gmail_review_items": ("created_at",),
+        }.items():
+            for column in columns:
+                conn.execute(f"""
+                    CREATE TRIGGER IF NOT EXISTS utc_insert_{table}_{column}
+                    AFTER INSERT ON {table}
+                    WHEN NEW.{column} GLOB '????-??-?? ??:??:??'
+                    BEGIN
+                        UPDATE {table}
+                        SET {column} = replace(NEW.{column}, ' ', 'T') || 'Z'
+                        WHERE rowid = NEW.rowid;
+                    END
+                """)
         conn.commit()
 
 @contextmanager

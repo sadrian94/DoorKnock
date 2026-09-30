@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from ..clock import utc_now
 import json
 from .. import crud
 from ..database import get_db
@@ -140,7 +140,7 @@ async def rematch_job(job_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Match analysis failed: {str(e)}")
 
-    now_str = datetime.now().isoformat()
+    now_str = utc_now().isoformat()
     analysis_str = json.dumps(analysis)
     score = analysis.get("suitability_score")
     reason = analysis.get("suitability_reason")

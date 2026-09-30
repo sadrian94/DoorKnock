@@ -6,7 +6,8 @@ import re
 import secrets
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from .clock import utc_now, local_date_of
 from email.utils import parseaddr
 from urllib.parse import urlencode
 
@@ -192,15 +193,15 @@ def _queue_review(conn, message: dict, received_at: str, event_code: str,
 
 def _change_stage(conn, application_id: str, current: str, to_stage: str,
                   event_code: str, received_at: str, message_id: str, reviewed: bool = False) -> None:
-    now = datetime.now(timezone.utc).isoformat()
+    now = utc_now().isoformat()
     outcome = "rejected" if to_stage == "closed" and event_code == "rejected" else None
-    followup = (datetime.now(timezone.utc).date() + timedelta(days=3)).isoformat() if to_stage in ("applied", "knocked") else None
+    followup = (date.fromisoformat(local_date_of(now)) + timedelta(days=3)).isoformat() if to_stage in ("applied", "knocked") else None
     conn.execute("""
         UPDATE applications SET current_stage = ?, outcome = ?,
-            applied_date = CASE WHEN ? = 'applied' THEN COALESCE(applied_date, substr(?, 1, 10)) ELSE applied_date END,
+            applied_date = CASE WHEN ? = 'applied' THEN COALESCE(applied_date, ?) ELSE applied_date END,
             next_followup_date = CASE WHEN ? IN ('closed', 'offer') THEN NULL WHEN ? IN ('applied', 'knocked') THEN ? ELSE next_followup_date END,
             updated_at = ? WHERE id = ?
-    """, (to_stage, outcome, to_stage, received_at, to_stage, to_stage, followup, now, application_id))
+    """, (to_stage, outcome, to_stage, local_date_of(received_at), to_stage, to_stage, followup, now, application_id))
     job_status = "archived" if to_stage == "closed" else "saved" if to_stage == "saved" else "applied" if to_stage == "applied" else "in_progress"
     conn.execute("UPDATE jobs SET status = ?, updated_at = ? WHERE id = (SELECT job_id FROM applications WHERE id = ?)", (job_status, now, application_id))
     conn.execute("""
@@ -232,7 +233,7 @@ def _record_message(message: dict) -> dict:
                 conn.execute("""
                     UPDATE gmail_review_items SET status = 'filtered', reason_code = 'job_board_alert',
                         resolved_at = ? WHERE message_id = ? AND status = 'pending'
-                """, (datetime.now(timezone.utc).isoformat(), message["id"]))
+                """, (utc_now().isoformat(), message["id"]))
             else:
                 _queue_review(conn, message, received_at, "related", None, "job_board_alert", [])
                 conn.execute("UPDATE gmail_review_items SET status = 'filtered' WHERE message_id = ?",
@@ -266,7 +267,7 @@ def _record_message(message: dict) -> dict:
             or (event_code == "recruiter_screen_scheduled" and current in ("applied", "knocked"))
         )
         bulk_or_automated = "list-unsubscribe" in headers or headers.get("auto-submitted", "").lower() not in ("", "no")
-        older_than_application = bool(app["applied_date"] and received_at[:10] < app["applied_date"])
+        older_than_application = bool(app["applied_date"] and local_date_of(received_at) < app["applied_date"])
         conn.execute("""
             INSERT INTO gmail_application_messages
             (message_id, thread_id, application_id, received_at, event_code, match_reason, stage_applied)
@@ -289,8 +290,8 @@ async def scan_recent(days: int = 14, limit: int = 150, page_token: str | None =
                       window_start: int | None = None) -> dict:
     if not 1 <= days <= 30 or not 100 <= limit <= 200:
         raise ValueError("Choose 1–30 recent days and a 100–200 message limit")
-    after = window_start or int((datetime.now(timezone.utc) - timedelta(days=days)).timestamp())
-    if after > time.time() or after < (datetime.now(timezone.utc) - timedelta(days=30)).timestamp() - 60:
+    after = window_start or int((utc_now() - timedelta(days=days)).timestamp())
+    if after > time.time() or after < (utc_now() - timedelta(days=30)).timestamp() - 60:
         raise ValueError("Scan window has expired; start a new scan")
     async with httpx.AsyncClient(timeout=25) as client:
         token = await _access_token(client)
@@ -400,6 +401,6 @@ def resolve_review(message_id: str, action: str, application_id: str | None = No
                       review["received_at"], review["event_code"], int(changed)))
         conn.execute("UPDATE gmail_review_items SET status = ?, resolved_at = ? WHERE message_id = ?",
                      ("applied" if action == "apply" else "dismissed",
-                      datetime.now(timezone.utc).isoformat(), message_id))
+                      utc_now().isoformat(), message_id))
         conn.commit()
         return {"stage_changed": changed, "status": action}

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Building2, Clock, ExternalLink, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
 import type { KanbanCard } from '../types';
 import { sortCards, type CardSort } from '../sortCards';
+import { useTimeSettings } from '../timeSettings';
+import { daysAgo, hasUnknownTimeZone } from '../time';
 
 interface KanbanBoardProps {
   stages: Record<string, KanbanCard[]>;
@@ -61,6 +63,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onMoveStage,
   isLoading,
 }) => {
+  const { settings } = useTimeSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<CardSort>('newest');
   const [collapsedStages, setCollapsedStages] = useState<Record<string, boolean>>(getInitialCollapsedStages);
@@ -100,10 +103,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   const getDaysAgo = (dateStr?: string) => {
-    if (!dateStr) return null;
-    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
-    if (diff <= 0) return 'Today';
-    return `${diff}d ago`;
+    return daysAgo(dateStr, settings.timezone);
   };
 
   const emptyStagesCount = STAGES_CONFIG.filter((col) => {
@@ -329,7 +329,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                               {/* Timeline indicator & Touchpoints */}
                               <div className="flex items-center justify-between text-[10px] text-slate-500 mt-3 pt-2 border-t border-slate-800/80">
                                 {daysAgo && (
-                                  <span className="flex items-center gap-1 text-slate-400">
+                                  <span className="flex items-center gap-1 text-slate-400"
+                                    title={hasUnknownTimeZone(card.applied_date || card.updated_at || '') ? 'Original date; time zone not recorded' : settings.timezone}>
                                     <Clock className="h-3 w-3" />
                                     {daysAgo}
                                   </span>

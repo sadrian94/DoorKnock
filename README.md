@@ -87,6 +87,12 @@ uv run pytest tests
 
 For a frontend development server, run `npm run dev` from `frontend/` while the backend is running; Vite proxies `/api` requests to port 8000.
 
+### Time zone
+
+Choose the local time zone in **Settings → Time zone**, or select **Use device time zone** and save. The default is `America/Chicago`. The saved preference applies to displayed event dates, the dashboard, follow-up calendar calculations, and dates in new documents and workspace names. Daylight saving time is automatic. Settings are stored locally in the Git-ignored `workspace/time-settings.json`.
+
+New event timestamps use explicit UTC offsets or `Z`. Calendar dates such as an application day or follow-up day remain `YYYY-MM-DD` and do not shift when the time zone changes. Published documents and existing calendar dates are not rewritten. Old SQLite `YYYY-MM-DD HH:MM:SS` defaults are read as UTC. Older ISO timestamps without an offset are shown as entered and marked “time zone not recorded”; their dormant status uses a comparison of wall-clock values in the selected zone, since their original zone cannot be recovered. No historical timestamp is migrated by guessing its offset.
+
 ## Documentation
 
 - [Workflow operating manual](workflow.md)

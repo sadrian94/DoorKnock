@@ -4,7 +4,7 @@ import logging
 import re
 import shutil
 import uuid
-from datetime import datetime, timezone
+from ..clock import local_today, utc_now
 from pathlib import Path
 from typing import Dict, Any, Optional
 import yaml
@@ -214,8 +214,9 @@ async def tailor_application_documents(
     raw_text = _job_posting_text(job_data)
     match_analysis_context = _match_analysis_context(job_data, raw_text) if authored_documents is None else ""
 
-    now_date = datetime.now(timezone.utc).strftime("%B %d, %Y")
-    today_stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = local_today()
+    now_date = today.strftime("%B %d, %Y")
+    today_stamp = today.isoformat()
 
     # Determine target workspace directory
     if custom_output_dir:
@@ -404,7 +405,7 @@ async def tailor_application_documents(
             "title": title,
             "document_type": document_type,
             "version": version,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": utc_now().isoformat(),
             "pdf": str(pdf),
             "typ": str(typ),
             "single_page": compiled.get("is_single_page", False),

@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import type { Job, JobAnalysisResult, JobDocumentsInfo, CompanyReconData } from '../types';
 import { getJobIdentifierItems } from '../jobIdentifiers';
+import { useTimeSettings } from '../timeSettings';
+import { formatDate, formatDateTime, hasUnknownTimeZone } from '../time';
 
 interface JobDetailModalProps {
   job: Job | null;
@@ -54,6 +56,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   onDeleteJob,
   isLoading,
 }) => {
+  const { settings } = useTimeSettings();
   const [activeTab, setActiveTab] = useState<'jd' | 'recon' | 'contacts' | 'resume' | 'cover_letter' | 'timeline'>('jd');
   const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
   const [copiedJobIdentifier, setCopiedJobIdentifier] = useState<string | null>(null);
@@ -1139,7 +1142,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                     )}
                     {parsedRecon.researched_at && (
                       <span className="text-slate-500 text-[11px] font-mono ml-auto">
-                        Analyzed: {new Date(parsedRecon.researched_at).toLocaleString()}
+                        Analyzed: {formatDateTime(parsedRecon.researched_at, settings.timezone)}
                       </span>
                     )}
                   </div>
@@ -1583,7 +1586,10 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                       <div className="absolute -left-1.5 top-1.5 h-3 w-3 rounded-full bg-amber-500 border-2 border-slate-900"></div>
                       <div className="flex items-center justify-between text-xs text-slate-400">
                         <span className="font-semibold text-slate-200">{event.title}</span>
-                        <span>{new Date(event.occurred_at).toLocaleDateString()}</span>
+                        <span title={formatDateTime(event.occurred_at, settings.timezone)}>
+                          {formatDate(event.occurred_at, settings.timezone)}
+                          {hasUnknownTimeZone(event.occurred_at) && ' · time zone not recorded'}
+                        </span>
                       </div>
                       {event.description && (
                         <p className="text-xs text-slate-400 mt-1">{event.description}</p>

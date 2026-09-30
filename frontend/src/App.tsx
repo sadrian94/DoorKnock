@@ -7,6 +7,7 @@ import { ImportJobModal } from './components/ImportJobModal';
 import { SettingsView } from './components/SettingsView';
 import { DashboardView } from './components/DashboardView';
 import type { Job, KanbanBoardResponse, DashboardSummary } from './types';
+import { useTimeSettings } from './timeSettings';
 
 type Tab = 'dashboard' | 'saved' | 'kanban' | 'settings';
 const tabFromHash = (): Tab => {
@@ -15,6 +16,7 @@ const tabFromHash = (): Tab => {
 };
 
 export const App: React.FC = () => {
+  const { settings: timeSettings } = useTimeSettings();
   const [currentTab, setCurrentTab] = useState<Tab>(tabFromHash);
   const changeTab = (tab: Tab) => {
     window.location.hash = tab;
@@ -100,7 +102,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     if (currentTab === 'dashboard') fetchDashboard();
-  }, [currentTab]);
+  }, [currentTab, timeSettings.timezone]);
 
   const handleSelectJob = async (jobId: string) => {
     try {

@@ -5,7 +5,7 @@ import socket
 import uuid
 import zlib
 from dataclasses import dataclass
-from datetime import datetime
+from ..clock import utc_now
 from typing import Optional, Dict, Any
 from urllib.parse import quote, unquote, urljoin, urlsplit
 from fastapi import APIRouter, HTTPException
@@ -607,7 +607,7 @@ def import_job(req: ImportConfirmedJobRequest):
     """Save the analyzed job into DoorKnock database and create an application in 'saved' stage."""
     job_id = str(uuid.uuid4())
     app_id = str(uuid.uuid4())
-    now_str = datetime.now().isoformat()
+    now_str = utc_now().isoformat()
 
     with get_db() as conn:
         conn.execute("""

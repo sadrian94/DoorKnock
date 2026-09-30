@@ -1,3 +1,5 @@
+import { timestampForSort } from './time.ts';
+
 export type CardSort = 'newest' | 'oldest' | 'company-asc' | 'company-desc' | 'score-desc' | 'score-asc';
 
 type SortableCard = {
@@ -26,8 +28,8 @@ export function sortCards<T extends SortableCard>(
       return sort === 'score-desc' ? bScore - aScore : aScore - bScore;
     }
 
-    const aDate = a[dateField] ? Date.parse(a[dateField]) : NaN;
-    const bDate = b[dateField] ? Date.parse(b[dateField]) : NaN;
+    const aDate = timestampForSort(a[dateField]);
+    const bDate = timestampForSort(b[dateField]);
     if (Number.isNaN(aDate)) return Number.isNaN(bDate) ? 0 : 1;
     if (Number.isNaN(bDate)) return -1;
     return sort === 'newest' ? bDate - aDate : aDate - bDate;

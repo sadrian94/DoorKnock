@@ -22,8 +22,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     analysis_json TEXT, -- Full structured AI fit breakdown
     company_recon_json TEXT, -- Structured company & department recon intelligence
     status TEXT NOT NULL DEFAULT 'saved', -- 'saved', 'ready', 'applied', 'in_progress', 'archived'
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_source_job_id ON jobs(source, source_job_id);
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS job_artifacts (
     resume_path TEXT,
     cover_letter_content TEXT,
     status TEXT NOT NULL DEFAULT 'draft', -- 'draft', 'approved', 'stale'
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_job_artifacts_job_id ON job_artifacts(job_id);
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS contacts (
     linkedin_url TEXT,
     email TEXT,
     notes TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_contacts_job_id ON contacts(job_id);
@@ -68,8 +68,8 @@ CREATE TABLE IF NOT EXISTS outreach_messages (
     body TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'draft', -- 'draft', 'ready_to_send', 'sent', 'replied', 'ignored'
     sent_at TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_outreach_contact_id ON outreach_messages(contact_id);
@@ -84,8 +84,8 @@ CREATE TABLE IF NOT EXISTS applications (
     next_followup_date TEXT,
     followup_count INTEGER NOT NULL DEFAULT 0,
     notes TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_applications_stage ON applications(current_stage);
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS timeline_events (
     to_stage TEXT,
     title TEXT NOT NULL,
     description TEXT,
-    occurred_at TEXT NOT NULL DEFAULT (datetime('now')),
+    occurred_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     metadata TEXT
 );
 
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS gmail_application_messages (
     event_code TEXT NOT NULL,
     match_reason TEXT NOT NULL,
     stage_applied INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_gmail_messages_application ON gmail_application_messages(application_id);
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS gmail_review_items (
     candidate_application_ids TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     resolved_at TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_gmail_review_status ON gmail_review_items(status, received_at);

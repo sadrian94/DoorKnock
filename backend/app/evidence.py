@@ -1,5 +1,5 @@
 from pathlib import Path
-from datetime import datetime
+from .clock import utc_now
 from typing import Dict, Any, Optional
 import yaml
 from .config import DOORKNOCK_MASTER_EVIDENCE_YAML_PATH
@@ -32,7 +32,7 @@ def backup_master_evidence() -> Optional[Path]:
     """Create a timestamped backup of master_evidence.yaml before editing."""
     if not DOORKNOCK_MASTER_EVIDENCE_YAML_PATH.exists():
         return None
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = utc_now().strftime("%Y%m%d_%H%M%S_%fZ")
     backup_path = DOORKNOCK_MASTER_EVIDENCE_YAML_PATH.parent / f"master_evidence.{timestamp}.yaml.bak"
     backup_path.write_text(DOORKNOCK_MASTER_EVIDENCE_YAML_PATH.read_text(encoding="utf-8"), encoding="utf-8")
     return backup_path

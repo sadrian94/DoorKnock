@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ArrowUpRight, CalendarClock, RefreshCw } from 'lucide-react';
 import type { DashboardSummary } from '../types';
+import { useTimeSettings } from '../timeSettings';
+import { formatDate, hasUnknownTimeZone } from '../time';
 
 interface DashboardViewProps {
   data: DashboardSummary | null;
@@ -23,16 +25,11 @@ const STAGE_LABELS: Record<string, string> = {
   closed: 'Closed',
 };
 
-const formatDate = (value: string) => {
-  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
-  return Number.isNaN(date.getTime())
-    ? value.slice(0, 10)
-    : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-};
-
 export const DashboardView: React.FC<DashboardViewProps> = ({
   data, isLoading, hasError, onRetry, onSelectJob,
 }) => {
+  const { settings } = useTimeSettings();
+  const displayDate = (value: string) => formatDate(value, settings.timezone, { month: 'short', day: 'numeric' });
   const [showAllAttention, setShowAllAttention] = useState(false);
   if (isLoading && !data) {
     return <div className="p-12 text-center text-slate-400">Loading dashboard…</div>;
@@ -98,7 +95,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="mt-2 flex gap-2">
             {data.weekly_applications.map((week, index) => (
               <span key={week.week_start} className="min-w-0 flex-1 text-center text-[10px] text-slate-500">
-                {index % 2 === 0 ? formatDate(week.week_start) : ''}
+                {index % 2 === 0 ? displayDate(week.week_start) : ''}
               </span>
             ))}
           </div>
@@ -146,7 +143,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <span className="block truncate text-xs text-slate-500">{item.company}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3 text-xs text-slate-400">
-                  {item.kind === 'followup' ? `Follow-up ${formatDate(item.date)}` : `Last updated ${formatDate(item.date)}`}
+                  {item.kind === 'followup' ? `Follow-up ${displayDate(item.date)}` : `Last updated ${displayDate(item.date)}`}
+                  {hasUnknownTimeZone(item.date) && ' · time zone not recorded'}
                   <ArrowUpRight className="h-4 w-4" />
                 </span>
               </button>

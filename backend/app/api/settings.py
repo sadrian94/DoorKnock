@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from ..ai.provider import get_settings, save_settings
 from ..ai.codex import app_server, CodexError
 from ..tailor.settings import get_resume_settings, save_resume_settings
+from ..clock import get_time_settings, save_time_settings, timezone_names, utc_now
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -15,6 +16,24 @@ class AISettingsRequest(BaseModel):
 
 class ResumeSettingsRequest(BaseModel):
     require_single_page: bool
+
+
+class TimeSettingsRequest(BaseModel):
+    timezone: str
+
+
+@router.get("/time")
+def read_time_settings():
+    return {**get_time_settings(), "available_timezones": timezone_names(),
+            "current_time": utc_now().isoformat()}
+
+
+@router.put("/time")
+def update_time_settings(request: TimeSettingsRequest):
+    try:
+        return save_time_settings(request.timezone)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/ai")

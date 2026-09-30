@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useTimeSettings } from '../timeSettings';
+import { formatDate, formatDateTime } from '../time';
 
 type Provider = 'gemini' | 'codex';
 type Settings = { provider: Provider; model: string; configured: boolean };
@@ -35,6 +37,30 @@ const readJson = async (response: Response) => {
 };
 
 export const SettingsView: React.FC = () => {
+  const { settings: timeSettings, setTimezone } = useTimeSettings();
+  const [selectedTimezone, setSelectedTimezone] = useState(timeSettings.timezone);
+  const [timeBusy, setTimeBusy] = useState(false);
+  const [timeMessage, setTimeMessage] = useState('');
+  const [previewInstant, setPreviewInstant] = useState(new Date().toISOString());
+  useEffect(() => {
+    const timer = window.setInterval(() => setPreviewInstant(new Date().toISOString()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const saveTimezone = async () => {
+    setTimeBusy(true);
+    setTimeMessage('');
+    try {
+      const result = await readJson(await fetch('/api/settings/time', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timezone: selectedTimezone }),
+      }));
+      setTimezone(result.timezone);
+      setSelectedTimezone(result.timezone);
+      setTimeMessage('Time zone saved. Dates and new documents now use this time zone.');
+    } catch (error) {
+      setTimeMessage(error instanceof Error ? error.message : 'Could not save time zone');
+    } finally { setTimeBusy(false); }
+  };
   const [provider, setProvider] = useState<Provider>('gemini');
   const [model, setModel] = useState(defaults.gemini);
   const [configured, setConfigured] = useState(false);
@@ -226,7 +252,33 @@ export const SettingsView: React.FC = () => {
     <section className="max-w-3xl mx-auto px-6 py-10 space-y-7">
       <div>
         <h2 className="text-2xl font-semibold text-white">Settings</h2>
-        <p className="text-sm text-slate-400 mt-2">Manage Gmail scans, AI, and resume formatting.</p>
+        <p className="text-sm text-slate-400 mt-2">Manage your time zone, Gmail scans, AI, and resume formatting.</p>
+      </div>
+      <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+        <div>
+          <h3 className="text-lg font-semibold text-white">Time zone</h3>
+          <p className="text-sm text-slate-400 mt-1">Use the same time zone for dates, follow-ups, and new documents. Daylight saving time adjusts automatically.</p>
+        </div>
+        <label className="block text-sm text-slate-200" htmlFor="timezone">Time zone</label>
+        <select id="timezone" value={selectedTimezone} disabled={timeBusy}
+          onChange={event => { setSelectedTimezone(event.target.value); setTimeMessage(''); }}
+          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white">
+          {timeSettings.available_timezones.map(zone => <option key={zone} value={zone}>{zone.replaceAll('_', ' ')}</option>)}
+        </select>
+        <p className="text-sm text-slate-300">Current time: <span className="font-medium text-white">{formatDateTime(previewInstant, selectedTimezone)}</span></p>
+        <p className="text-xs text-slate-400">Saved time zone: {timeSettings.timezone}. Existing application dates and published documents keep their original dates. Older times without a recorded time zone are shown as entered.</p>
+        <div className="flex flex-wrap gap-3">
+          <button disabled={timeBusy} onClick={() => {
+            const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (timeSettings.available_timezones.includes(zone)) {
+              setSelectedTimezone(zone);
+              setTimeMessage('Device time zone selected. Click Save time zone to apply.');
+            } else { setTimeMessage('Select your time zone from the list.'); }
+          }} className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50">Use device time zone</button>
+          <button onClick={() => void saveTimezone()} disabled={timeBusy}
+            className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50">{timeBusy ? 'Saving…' : 'Save time zone'}</button>
+        </div>
+        {timeMessage && <p role="status" className="text-sm text-slate-200">{timeMessage}</p>}
       </div>
       <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
         <div>
@@ -278,7 +330,7 @@ export const SettingsView: React.FC = () => {
           {gmailReviews.map(item => {
             const choice = reviewChoices[item.message_id] || { applicationId: '', stage: '' };
             return <div key={item.message_id} className="space-y-2 border-t border-slate-800 pt-3 text-sm text-slate-200">
-              <p>{gmailReviewReasons[item.reason_code] || 'Needs a manual check'} · {gmailEventLabels[item.event_code] || 'Related message'} · {new Date(item.received_at).toLocaleDateString()}</p>
+              <p>{gmailReviewReasons[item.reason_code] || 'Needs a manual check'} · {gmailEventLabels[item.event_code] || 'Related message'} · {formatDate(item.received_at, timeSettings.timezone)}</p>
               <a className="text-amber-400 underline" href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(item.message_id)}`} target="_blank" rel="noopener noreferrer">Open original email in Gmail</a>
               <div className="flex flex-wrap gap-2">
                 <label className="text-xs text-slate-400">Application
@@ -370,7 +422,7 @@ export const SettingsView: React.FC = () => {
         </button>
         {resumeSettingsMessage && <p role="status" className="text-sm text-slate-200">{resumeSettingsMessage}</p>}
       </div>
-      <p className="text-sm text-slate-500">Codex manages its own ChatGPT sign-in. DoorKnock stores provider, model, and resume formatting preferences locally.</p>
+      <p className="text-sm text-slate-500">Codex manages its own ChatGPT sign-in. DoorKnock stores your time zone, provider, model, and resume formatting preferences locally.</p>
     </section>
   );
 };
