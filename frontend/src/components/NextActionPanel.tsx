@@ -1,0 +1,123 @@
+import { useState } from 'react';
+import type { NextAction } from '../types';
+import { formatDate } from '../time';
+import { useTimeSettings } from '../timeSettings';
+
+const EVENTS = [
+  ['application_submitted', 'Application submitted'], ['outreach_sent', 'Contacted'],
+  ['follow_up', 'Follow-up sent'], ['message_received', 'Substantive reply received'],
+  ['acknowledgement', 'Acknowledgement received'], ['interview_scheduled', 'Interview scheduled'],
+  ['interview_completed', 'Interview completed'], ['thank_you_sent', 'Thank-you sent'],
+  ['assessment_assigned', 'Assessment assigned'], ['assessment_submitted', 'Assessment submitted'],
+  ['status_checked', 'Status checked'], ['reminder_set', 'Set reminder date'],
+  ['cadence_paused', 'Pause reminders'], ['cadence_resumed', 'Resume reminders'], ['stage_updated', 'Change stage / close application'],
+];
+
+function localInputNow() {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+const ROUNDS = [['recruiter_screen', 'Recruiter screen'], ['team_match', 'Team interview'], ['technical_interview', 'Technical interview'], ['final_round', 'Final round']];
+const STAGES = [['saved','Saved'], ['applied','Applied'], ['knocked','Contacted'], ['assessment','Assessment'], ...ROUNDS, ['offer','Offer'], ['closed','Closed']];
+
+export function NextActionPanel({ action, currentStage, onRecorded }: { action: NextAction; currentStage: string; onRecorded: () => void | Promise<void> }) {
+  const { settings } = useTimeSettings();
+  const [open, setOpen] = useState(false);
+  const [event, setEvent] = useState(action.kind === 'assessment' ? 'assessment_submitted' : action.kind === 'interview_review' ? 'interview_completed' : 'message_received');
+  const [occurred, setOccurred] = useState(localInputNow);
+  const [deadline, setDeadline] = useState('');
+  const [expected, setExpected] = useState('');
+  const [scope, setScope] = useState('cold');
+  const [round, setRound] = useState(ROUNDS.some(([key]) => key === currentStage) ? currentStage : '');
+  const [stage, setStage] = useState(currentStage);
+  const [outcome, setOutcome] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const needsDeadline = ['interview_scheduled', 'assessment_assigned', 'reminder_set', 'cadence_resumed'].includes(event) || (event === 'stage_updated' && (stage === 'assessment' || ROUNDS.some(([key]) => key === stage)));
+  const hasExpected = ['message_received', 'interview_completed', 'assessment_submitted'].includes(event);
+  const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const displayDate = (value: string) => formatDate(value, settings.timezone, { month: 'short', day: 'numeric', year: 'numeric' });
+
+  async function record() {
+    setBusy(true);
+    setError('');
+    try {
+      const payload: Record<string, string> = { event_type: event, occurred_at: new Date(occurred).toISOString() };
+      if (event === 'interview_scheduled' || event === 'interview_completed') payload.interview_stage = round;
+      if (event === 'stage_updated') { payload.to_stage = stage; if (stage === 'closed') payload.outcome = outcome; }
+      if (needsDeadline) payload[['reminder_set', 'cadence_resumed'].includes(event) ? 'action_date' : 'due_date'] = deadline;
+      if (hasExpected && expected) payload.expected_response_date = expected;
+      if (event === 'outreach_sent') payload.contact_scope = scope;
+      if (event === 'application_submitted' && expected) payload.review_after = expected;
+      const response = await fetch(`/api/pipeline/applications/${encodeURIComponent(action.application_id)}/cadence`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Check the event and dates.');
+      await onRecorded();
+      setOpen(false);
+      setExpected('');
+      setDeadline('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not record the event.');
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <section className="mx-6 my-3 rounded-xl border border-slate-700 bg-slate-900 p-4" aria-label="Next action">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-amber-300">{action.label}
+            {action.date && <span className="ml-2 text-slate-300">{displayDate(action.date)}</span>}
+            {action.state === 'waiting' && <span className="ml-2 text-xs text-slate-500">Waiting for response</span>}
+          </p>
+          {action.due_date && <p className="mt-1 text-xs text-slate-300">{action.kind === 'interview' ? 'Interview' : 'Deadline'}: {displayDate(action.due_date)}</p>}
+          <p className="mt-1 text-xs text-slate-400">{action.reason}</p>
+          <details className="mt-1 text-[11px] text-slate-500"><summary className="cursor-pointer">Why this date?</summary><p>Based on: {action.basis || 'Current stage'} · {action.followup_count}/2 status follow-ups · dates use weekdays (Mon–Fri)</p></details>
+        </div>
+        <button onClick={() => setOpen(!open)} className="rounded-lg border border-slate-600 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800">
+          {open ? 'Cancel' : 'Update progress'}
+        </button>
+      </div>
+      {open && <form onSubmit={(e) => { e.preventDefault(); void record(); }} className="mt-4 space-y-3 border-t border-slate-700 pt-4">
+        <p className="text-xs text-slate-400">Choose what happened. Saving updates your stage, timeline and next action together.</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-xs text-slate-300">What happened?
+            <select value={event} onChange={(e) => { setEvent(e.target.value); setDeadline(''); setExpected(''); }} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2">
+              <optgroup label="Progress">{EVENTS.filter(([value]) => !['reminder_set', 'cadence_paused', 'cadence_resumed', 'acknowledgement', 'stage_updated'].includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</optgroup>
+              <optgroup label="More options">{EVENTS.filter(([value]) => ['reminder_set', 'cadence_paused', 'cadence_resumed', 'acknowledgement', 'stage_updated'].includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</optgroup>
+            </select>
+          </label>
+          {(event === 'interview_scheduled' || event === 'interview_completed') && <label className="text-xs text-slate-300">Interview round
+            <select required value={round} onChange={(e) => setRound(e.target.value)} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2"><option value="">Choose round</option>{ROUNDS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
+          </label>}
+          {event === 'stage_updated' && <label className="text-xs text-slate-300">Confirmed stage
+            <select value={stage} onChange={(e) => setStage(e.target.value)} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2">{STAGES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
+          </label>}
+          {event === 'stage_updated' && stage === 'closed' && <label className="text-xs text-slate-300">Confirmed outcome
+            <select required value={outcome} onChange={(e) => setOutcome(e.target.value)} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2"><option value="">Choose outcome</option>{['rejected', 'withdrawn', 'offer_accepted', 'offer_declined', 'ghosted'].map((key) => <option key={key} value={key}>{key.replaceAll('_', ' ')}</option>)}</select>
+          </label>}
+          {needsDeadline && <label className="text-xs text-slate-300">{['reminder_set', 'cadence_resumed'].includes(event) ? 'Next action date' : (event === 'interview_scheduled' || (event === 'stage_updated' && stage !== 'assessment')) ? 'Confirmed interview date' : 'Confirmed assessment deadline'}
+            <input required type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2" />
+          </label>}
+          {(hasExpected || event === 'application_submitted') && <label className="text-xs text-slate-300">{event === 'application_submitted' ? 'Posting closes / review starts after (optional)' : 'Employer response date (optional)'}
+            <input type="date" value={expected} onChange={(e) => setExpected(e.target.value)} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2" />
+          </label>}
+          {event === 'outreach_sent' && <label className="text-xs text-slate-300">Contact context
+            <select value={scope} onChange={(e) => setScope(e.target.value)} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2">
+              <option value="cold">First outreach · 7 weekdays</option><option value="warm">Recruiter or referral contact · 5 weekdays</option>
+            </select>
+          </label>}
+        </div>
+        <details className="text-xs text-slate-400"><summary className="cursor-pointer">Event date (defaults to now)</summary>          <label className="text-xs text-slate-300">Event time ({browserZone})
+            <input required type="datetime-local" value={occurred} onChange={(e) => setOccurred(e.target.value)} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2" />
+          </label>
+        </details>
+        {error && <p role="alert" className="text-xs text-red-300">{error}</p>}
+        <button disabled={busy} className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">{busy ? 'Saving…' : 'Save progress'}</button>
+      </form>}
+    </section>
+  );
+}

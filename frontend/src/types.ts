@@ -29,7 +29,9 @@ export interface Job {
   contacts?: Contact[];
   artifacts?: any[];
   timeline?: TimelineEvent[];
+  deleted_timeline?: TimelineEvent[];
   application?: any;
+  next_action?: NextAction;
 }
 
 export interface Contact {
@@ -68,7 +70,23 @@ export interface TimelineEvent {
   occurred_at: string;
 }
 
+export interface NextAction {
+  application_id: string;
+  job_id: string;
+  title: string;
+  company: string;
+  kind: 'followup' | 'status_check' | 'record_review' | 'interview' | 'interview_review' | 'thank_you' | 'assessment' | 'paused' | 'closed';
+  label: string;
+  date: string | null;
+  due_date: string | null;
+  state: 'due' | 'waiting' | 'paused' | 'closed';
+  reason: string;
+  basis: string;
+  followup_count: number;
+}
+
 export interface KanbanCard {
+  next_action?: NextAction;
   application_id: string;
   job_id: string;
   title: string;
@@ -98,16 +116,10 @@ export interface DashboardSummary {
   submitted: number;
   active: number;
   followups_due: number;
+  status_checks_due: number;
   stage_counts: Record<string, number>;
   weekly_applications: { week_start: string; count: number }[];
-  attention_items: {
-    application_id: string;
-    job_id: string;
-    title: string;
-    company: string;
-    kind: 'followup' | 'stale';
-    date: string;
-  }[];
+  attention_items: NextAction[];
 }
 
 export interface TriageResult {

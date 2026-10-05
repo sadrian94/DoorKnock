@@ -120,33 +120,6 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleMoveStage = async (applicationId: string, toStage: string, outcome?: string) => {
-    try {
-      const payload: { to_stage: string; outcome?: string } = { to_stage: toStage };
-      if (outcome !== undefined) {
-        payload.outcome = outcome;
-      }
-      const res = await fetch(`/api/pipeline/applications/${applicationId}/stage`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const stageLabel = toStage.replace('_', ' ');
-        const outcomeLabel = outcome && outcome !== 'clear' ? ` (${outcome})` : '';
-        showToast(`Updated to ${stageLabel}${outcomeLabel}`);
-        fetchKanban();
-        if (currentTab === 'dashboard') fetchDashboard();
-        if (selectedJob && selectedJob.application?.id === applicationId) {
-          handleSelectJob(selectedJob.id);
-        }
-      }
-    } catch (e) {
-      console.error('Failed to update stage:', e);
-      showToast('Failed to update stage');
-    }
-  };
-
   const handleStartApplication = async (jobId: string) => {
     try {
       const res = await fetch(`/api/jobs/${jobId}/start-application`, { method: 'POST' });
@@ -225,7 +198,6 @@ export const App: React.FC = () => {
           <KanbanBoard
             stages={kanbanData.stages}
             onSelectJob={handleSelectJob}
-            onMoveStage={handleMoveStage}
             isLoading={isLoadingKanban}
           />
         ) : (
@@ -238,8 +210,8 @@ export const App: React.FC = () => {
         <JobDetailModal
           job={selectedJob}
           onClose={() => setSelectedJob(null)}
-          onMoveStage={handleMoveStage}
           onDeleteJob={handleDeleteJob}
+          onCadenceUpdate={(updated) => { setSelectedJob(updated); void fetchKanban(); void fetchDashboard(); }}
           isLoading={isLoadingDetail}
         />
       )}

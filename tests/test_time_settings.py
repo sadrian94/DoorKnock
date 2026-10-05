@@ -84,14 +84,14 @@ def test_manual_and_gmail_stages_use_same_local_calendar_day(tmp_path, monkeypat
     gmail = crud.create_application_for_job("gmail")
     updated = crud.transition_application_stage(manual["id"], "applied")
     assert updated["applied_date"] == "2026-09-29"
-    assert updated["next_followup_date"] == "2026-10-02"
+    assert updated["next_followup_date"] == "2026-10-13"
     assert datetime.fromisoformat(updated["updated_at"]).utcoffset().total_seconds() == 0
     with get_db() as conn:
         gmail_sync._change_stage(conn, gmail["id"], "saved", "applied", "application_received",
                                  "2026-09-30T02:00:00+00:00", "synthetic-message", reviewed=True)
         result = conn.execute("SELECT * FROM applications WHERE id = ?", (gmail["id"],)).fetchone()
         assert result["applied_date"] == "2026-09-29"
-        assert result["next_followup_date"] == "2026-10-02"
+        assert result["next_followup_date"] == "2026-10-13"
 
 
 def test_document_directory_uses_local_day(tmp_path, monkeypatch):
@@ -153,7 +153,7 @@ def test_database_defaults_are_explicit_utc_without_rewriting_legacy_rows(tmp_pa
             assert conn.execute("SELECT created_at FROM jobs WHERE id = 'old-default'").fetchone()[0] == "2026-09-30 02:00:00"
 
 
-def test_stale_comparison_uses_instants_instead_of_iso_string_order(tmp_path, monkeypatch):
+def test_status_review_uses_local_event_day_not_row_edits_or_iso_order(tmp_path, monkeypatch):
     from app import clock, crud
 
     monkeypatch.setattr(clock, "SETTINGS_PATH", tmp_path / "time-settings.json")
@@ -162,9 +162,9 @@ def test_stale_comparison_uses_instants_instead_of_iso_string_order(tmp_path, mo
     init_db()
     with get_db() as conn:
         for key, value in [("stale", "2026-09-16T00:30:00+00:00"),
-                           ("fresh", "2026-09-15T22:00:00-05:00")]:
+                           ("fresh", "2026-09-15T23:00:00-07:00")]:
             conn.execute("INSERT INTO jobs (id, title, company) VALUES (?, 'Analyst', 'Example')", (key,))
-            conn.execute("INSERT INTO applications (id, job_id, current_stage, updated_at) VALUES (?, ?, 'applied', ?)",
+            conn.execute("INSERT INTO applications (id, job_id, current_stage, applied_date, updated_at) VALUES (?, ?, 'applied', ?, '2026-09-29T20:00:00Z')",
                          (key, key, value))
         conn.commit()
     assert [row["id"] for row in crud.get_stale_applications(14)] == ["stale"]

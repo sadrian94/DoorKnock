@@ -83,7 +83,7 @@
   #text(weight: "bold", size: 9.6pt)[{{ resume.target_role | typst_markup }}] \
   #v(2pt)
   #text(size: 8.6pt)[
-    {{ candidate.location | typst_markup }} #text(weight: "bold")[|]
+    {% if candidate.location and candidate.location.strip() %}{{ candidate.location | typst_markup }} #text(weight: "bold")[|] {% endif %}
     {{ candidate.phone | typst_markup }} #text(weight: "bold")[|]
     #let email = {{ candidate.email | typst_string }}
     #link("mailto:" + email)[#email] #text(weight: "bold")[|]

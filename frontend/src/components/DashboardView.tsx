@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ArrowUpRight, CalendarClock, RefreshCw } from 'lucide-react';
 import type { DashboardSummary } from '../types';
 import { useTimeSettings } from '../timeSettings';
-import { formatDate, hasUnknownTimeZone } from '../time';
+import { formatDate } from '../time';
 
 interface DashboardViewProps {
   data: DashboardSummary | null;
@@ -15,7 +15,7 @@ interface DashboardViewProps {
 const STAGE_LABELS: Record<string, string> = {
   saved: 'Saved',
   applied: 'Applied',
-  knocked: 'Knocked',
+  knocked: 'Contacted',
   recruiter_screen: 'Recruiter screen',
   assessment: 'Assessment',
   team_match: 'Team match',
@@ -51,7 +51,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     { label: 'Saved jobs', value: data.saved_jobs, note: 'Jobs marked saved or ready' },
     { label: 'Applications sent', value: data.submitted, note: 'Records with an applied date' },
     { label: 'In progress', value: data.active, note: 'Excludes saved, offer, and closed' },
-    { label: 'Follow-ups due', value: data.followups_due, note: 'Overdue or due within 3 days' },
+    { label: 'Follow-up due', value: data.followups_due, note: `${data.status_checks_due} status checks · due or within 3 days` },
   ];
 
   return (
@@ -128,11 +128,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
         <div className="flex items-center gap-2">
           <CalendarClock className="h-5 w-5 text-amber-400" />
-          <h3 className="font-semibold text-white">Needs review</h3>
+          <h3 className="font-semibold text-white">Next actions</h3>
         </div>
-        <p className="mt-1 text-xs text-slate-400">Follow-up dates are reminders; a stale record does not establish an outcome.</p>
+        <p className="mt-1 text-xs text-slate-400">Weekdays only · employer timelines take priority · pausing reminders keeps your application stage.</p>
         {data.attention_items.length === 0 ? (
-          <p className="mt-5 text-sm text-slate-500">No follow-ups due or stale applications.</p>
+          <p className="mt-5 text-sm text-slate-500">No next actions due. Paused applications remain in your pipeline.</p>
         ) : (
           <div className="mt-4 divide-y divide-slate-800">
             {(showAllAttention ? data.attention_items : data.attention_items.slice(0, 8)).map((item) => (
@@ -141,10 +141,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-slate-200">{item.title}</span>
                   <span className="block truncate text-xs text-slate-500">{item.company}</span>
+                  <span className="mt-1 block text-xs text-slate-400">{item.reason}</span>
+                  <span className="block text-[11px] text-slate-500">Based on: {item.basis}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3 text-xs text-slate-400">
-                  {item.kind === 'followup' ? `Follow-up ${displayDate(item.date)}` : `Last updated ${displayDate(item.date)}`}
-                  {hasUnknownTimeZone(item.date) && ' · time zone not recorded'}
+                  <span className="max-w-44 text-right">{item.label}
+                    <span className="block">{item.date ? displayDate(item.date) : 'Confirm details'}</span>
+                    {item.due_date && <span className="block">{item.kind === 'interview' ? 'Interview' : 'Deadline'} {displayDate(item.due_date)}</span>}
+                  </span>
                   <ArrowUpRight className="h-4 w-4" />
                 </span>
               </button>

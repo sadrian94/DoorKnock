@@ -1,9 +1,10 @@
 import uuid
 import json
 from datetime import date, timedelta
-from .clock import utc_now, local_now, local_today, local_date_of
+from .clock import utc_now, local_today, local_date_of
 from typing import List, Dict, Any, Optional
 from .database import get_db
+from . import cadence
 
 KANBAN_STAGES = [
     "saved",
@@ -21,7 +22,7 @@ KANBAN_STAGES = [
 def get_saved_jobs(search: Optional[str] = None, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     with get_db() as conn:
         query = """
-            SELECT j.*, 
+            SELECT j.*,
                    (SELECT COUNT(*) FROM contacts c WHERE c.job_id = j.id) as contact_count,
                    (SELECT COUNT(*) FROM job_artifacts a WHERE a.job_id = j.id) as artifact_count,
                    app.current_stage as application_stage
@@ -34,10 +35,10 @@ def get_saved_jobs(search: Optional[str] = None, limit: int = 100, offset: int =
             query += " AND (j.title LIKE ? OR j.company LIKE ? OR j.location LIKE ?)"
             s = f"%{search}%"
             params.extend([s, s, s])
-        
+
         query += " ORDER BY j.suitability_score DESC NULLS LAST, julianday(j.created_at) DESC LIMIT ? OFFSET ?"
         params.extend([limit, offset])
-        
+
         cursor = conn.execute(query, params)
         return [dict(row) for row in cursor.fetchall()]
 
@@ -48,44 +49,49 @@ def get_job_by_id(job_id: str) -> Optional[Dict[str, Any]]:
         if not row:
             return None
         job = dict(row)
-        
+
         # Get application
         app_cursor = conn.execute("SELECT * FROM applications WHERE job_id = ?", (job_id,))
         app_row = app_cursor.fetchone()
         job["application"] = dict(app_row) if app_row else None
-        
+
         # Get contacts
         contacts_cursor = conn.execute("SELECT * FROM contacts WHERE job_id = ? ORDER BY julianday(created_at) ASC", (job_id,))
         contacts = [dict(r) for r in contacts_cursor.fetchall()]
-        
+
         # For each contact, get messages
         for c in contacts:
             msg_cursor = conn.execute("SELECT * FROM outreach_messages WHERE contact_id = ? ORDER BY julianday(created_at) ASC", (c["id"],))
             c["messages"] = [dict(m) for m in msg_cursor.fetchall()]
-        
+
         job["contacts"] = contacts
-        
+
         # Get artifacts
         art_cursor = conn.execute("SELECT * FROM job_artifacts WHERE job_id = ? ORDER BY julianday(created_at) DESC", (job_id,))
         job["artifacts"] = [dict(a) for a in art_cursor.fetchall()]
-        
+
         # Get timeline if application exists
         if job["application"]:
             timeline_cursor = conn.execute(
                 "SELECT * FROM timeline_events WHERE application_id = ? ORDER BY julianday(occurred_at) DESC",
                 (job["application"]["id"],)
             )
-            job["timeline"] = [dict(t) for t in timeline_cursor.fetchall()]
+            timeline = timeline_cursor.fetchall()
+            job["timeline"] = [dict(t) for t in timeline if cadence.visible_event(t)]
+            job["deleted_timeline"] = [dict(t) for t in timeline if not cadence.visible_event(t)]
         else:
             job["timeline"] = []
-            
+
+        if job['application']:
+            job['next_action'] = next((item for item in cadence.schedules(conn)
+                                       if item['application_id'] == job['application']['id']), None)
         return job
 
 def get_kanban_board() -> Dict[str, Any]:
     stages: Dict[str, List[Dict[str, Any]]] = {stage: [] for stage in KANBAN_STAGES}
     with get_db() as conn:
         query = """
-            SELECT 
+            SELECT
                 app.id as application_id,
                 app.job_id,
                 app.current_stage,
@@ -110,14 +116,16 @@ def get_kanban_board() -> Dict[str, Any]:
         cursor = conn.execute(query)
         rows = cursor.fetchall()
         total = len(rows)
+        actions = {item['application_id']: item for item in cadence.schedules(conn)}
         for row in rows:
             card = dict(row)
+            card['next_action'] = actions.get(card['application_id'])
             stage = card.get("current_stage")
             if stage in stages:
                 stages[stage].append(card)
             else:
                 stages["saved"].append(card)
-                
+
         return {"stages": stages, "total_applications": total}
 
 
@@ -146,38 +154,22 @@ def get_dashboard_summary() -> Dict[str, Any]:
             if not applied_date:
                 continue
             submitted += 1
-            try:
-                applied_day = date.fromisoformat(applied_date)
-            except ValueError:
+            applied_day = cadence.event_day(applied_date)
+            if not applied_day:
                 continue
             week_start = (applied_day - timedelta(days=applied_day.weekday())).isoformat()
             if week_start in weeks:
                 weeks[week_start] += 1
 
-    followups = get_upcoming_followups(days_ahead=3)
-    stale = get_stale_applications(days_dormant=14)
-    attention_items = []
-    seen = set()
-    for kind, records in (("followup", followups), ("stale", stale)):
-        for record in records:
-            if record["id"] in seen:
-                continue
-            seen.add(record["id"])
-            attention_items.append({
-                "application_id": record["id"],
-                "job_id": record["job_id"],
-                "title": record["title"],
-                "company": record["company"],
-                "kind": kind,
-                "date": record["next_followup_date"] if kind == "followup" else record["updated_at"],
-            })
+    attention_items = cadence.attention()
 
     return {
         "saved_jobs": saved_jobs,
         "submitted": submitted,
         "active": sum(count for stage, count in stage_counts.items()
                       if stage not in ("saved", "closed", "offer")),
-        "followups_due": len(followups),
+        "followups_due": sum(item['kind'] == 'followup' for item in attention_items),
+        "status_checks_due": sum(item['kind'] == 'status_check' for item in attention_items),
         "stage_counts": stage_counts,
         "weekly_applications": [
             {"week_start": week, "count": count} for week, count in weeks.items()
@@ -196,66 +188,77 @@ def transition_application_stage(application_id: str, to_stage: str, outcome: Op
     to_stage = normalized_stage
 
     with get_db() as conn:
-        cursor = conn.execute("SELECT * FROM applications WHERE id = ?", (application_id,))
-        app = cursor.fetchone()
-        if not app:
-            return None
-        from_stage = app["current_stage"]
-        now_str = utc_now().isoformat()
-        today = date.fromisoformat(local_date_of(now_str))
-        
-        applied_date = app["applied_date"]
-        if to_stage == "applied" and not applied_date:
-            applied_date = today.isoformat()
-            
-        # Calculate next follow up date if stage is applied or knocked
-        next_followup = app["next_followup_date"]
-        if to_stage in ("applied", "knocked"):
-            next_followup = (today + timedelta(days=3)).isoformat()
-        elif to_stage in ("closed", "offer"):
-            next_followup = None
-            
-        if outcome is not None:
-            clean_outcome = None if outcome.lower().strip() in ("", "clear", "none", "null") else outcome.strip()
-        else:
-            # When moving to an active stage (not closed/offer), automatically clear any stale terminal outcome
-            clean_outcome = None if to_stage not in ("closed", "offer") else app["outcome"]
+        conn.execute('BEGIN IMMEDIATE')
+        updated = _transition_application_stage(conn, application_id, to_stage, outcome, note)
+        conn.commit()
+        return updated
 
-        conn.execute("""
-            UPDATE applications
-            SET current_stage = ?, outcome = ?, 
-                applied_date = COALESCE(?, applied_date),
-                next_followup_date = ?,
-                updated_at = ?
-            WHERE id = ?
-        """, (to_stage, clean_outcome, applied_date, next_followup, now_str, application_id))
-        
-        # Also update job status if appropriate
-        job_status = "in_progress"
-        if to_stage == "closed":
-            job_status = "archived"
-        elif to_stage == "saved":
-            job_status = "saved"
-        elif to_stage == "applied":
-            job_status = "applied"
-            
-        conn.execute("UPDATE jobs SET status = ?, updated_at = ? WHERE id = ?", (job_status, now_str, app["job_id"]))
-        
+
+def _transition_application_stage(conn, application_id, to_stage, outcome=None, note=None, *, occurred_at=None, log_event=True):
+    if to_stage not in KANBAN_STAGES:
+        raise ValueError('Choose a supported stage')
+    cursor = conn.execute("SELECT * FROM applications WHERE id = ?", (application_id,))
+    app = cursor.fetchone()
+    if not app:
+        return None
+    from_stage = app["current_stage"]
+    now_str = occurred_at or utc_now().isoformat()
+    today = date.fromisoformat(local_date_of(now_str))
+
+    applied_date = app["applied_date"]
+    if to_stage == "applied" and not applied_date:
+        applied_date = today.isoformat()
+
+    # Calculate next follow up date if stage is applied or knocked
+    next_followup = app["next_followup_date"]
+    if to_stage == 'applied' and from_stage != 'applied':
+        next_followup = cadence.business_days(cadence.event_day(applied_date) or today, 10).isoformat()
+    elif to_stage == 'knocked' and from_stage != 'knocked':
+        # A stage change alone is not evidence of sent outreach.
+        next_followup = None
+    elif to_stage in ("closed", "offer"):
+        next_followup = None
+
+    if outcome is not None:
+        clean_outcome = None if outcome.lower().strip() in ("", "clear", "none", "null") else outcome.strip()
+    else:
+        # When moving to an active stage (not closed/offer), automatically clear any stale terminal outcome
+        clean_outcome = None if to_stage not in ("closed", "offer") else app["outcome"]
+
+    conn.execute("""
+        UPDATE applications
+        SET current_stage = ?, outcome = ?,
+            applied_date = COALESCE(?, applied_date),
+            next_followup_date = ?,
+            updated_at = ?
+        WHERE id = ?
+    """, (to_stage, clean_outcome, applied_date, next_followup, now_str, application_id))
+
+    # Also update job status if appropriate
+    job_status = "in_progress"
+    if to_stage == "closed":
+        job_status = "archived"
+    elif to_stage == "saved":
+        job_status = "saved"
+    elif to_stage == "applied":
+        job_status = "applied"
+
+    conn.execute("UPDATE jobs SET status = ?, updated_at = ? WHERE id = ?", (job_status, now_str, app["job_id"]))
+
+    if log_event:
         # Log timeline event
         event_id = str(uuid.uuid4())
-        title = f"Stage changed to {to_stage.replace('_', ' ').title()}"
+        title = f"Stage changed to {'Contacted' if to_stage == 'knocked' else to_stage.replace('_', ' ').title()}"
         if outcome:
             title += f" ({outcome})"
-            
+
         conn.execute("""
             INSERT INTO timeline_events (id, application_id, event_type, from_stage, to_stage, title, description, occurred_at)
             VALUES (?, ?, 'stage_change', ?, ?, ?, ?, ?)
         """, (event_id, application_id, from_stage, to_stage, title, note, now_str))
-        
-        conn.commit()
-        
-        updated_app = conn.execute("SELECT * FROM applications WHERE id = ?", (application_id,)).fetchone()
-        return dict(updated_app) if updated_app else None
+
+    updated_app = conn.execute("SELECT * FROM applications WHERE id = ?", (application_id,)).fetchone()
+    return dict(updated_app) if updated_app else None
 
 def create_application_for_job(job_id: str, stage: str = "saved") -> Dict[str, Any]:
     with get_db() as conn:
@@ -263,7 +266,7 @@ def create_application_for_job(job_id: str, stage: str = "saved") -> Dict[str, A
         existing = cursor.fetchone()
         if existing:
             return dict(existing)
-            
+
         app_id = str(uuid.uuid4())
         now_str = utc_now().isoformat()
         conn.execute("""
@@ -368,42 +371,24 @@ def update_outreach_status(message_id: str, status: str, sent_at: Optional[str] 
         row = conn.execute("SELECT * FROM outreach_messages WHERE id = ?", (message_id,)).fetchone()
         return dict(row) if row else None
 
-def get_stale_applications(days_dormant: int = 14) -> List[Dict[str, Any]]:
+def get_stale_applications(days_dormant: int = 30) -> List[Dict[str, Any]]:
+    """Compatibility review list based on meaningful evidence, never row edits."""
     with get_db() as conn:
-        cutoff = (utc_now() - timedelta(days=days_dormant)).isoformat()
-        legacy_cutoff = (local_now().replace(tzinfo=None) - timedelta(days=days_dormant)).isoformat()
-        query = """
-            SELECT app.*, j.title, j.company, j.job_url
-            FROM applications app
-            JOIN jobs j ON j.id = app.job_id
-            WHERE app.current_stage NOT IN ('closed', 'offer', 'saved')
-              AND julianday(app.updated_at) <= julianday(
-                  CASE WHEN app.updated_at GLOB '????-??-??T??:??:??*'
-                            AND substr(app.updated_at, -1) != 'Z'
-                            AND instr(substr(app.updated_at, 20), '+') = 0
-                            AND instr(substr(app.updated_at, 20), '-') = 0
-                       THEN ? ELSE ? END)
-            ORDER BY julianday(app.updated_at) ASC
-        """
-        # Old naive ISO timestamps have no recoverable zone. Compare their
-        # original wall clock to a local cutoff; never rewrite them as UTC.
-        cursor = conn.execute(query, (legacy_cutoff, cutoff))
-        return [dict(r) for r in cursor.fetchall()]
+        actions = {item['application_id']: item for item in cadence.schedules(conn)}
+        rows = conn.execute('SELECT a.*,j.company,j.title,j.job_url FROM applications a JOIN jobs j ON j.id=a.job_id').fetchall()
+        return [dict(row, next_action=actions[row['id']]) for row in rows
+                if actions[row['id']]['state'] not in ('closed', 'paused')
+                and actions[row['id']]['meaningful_date']
+                and (local_today() - cadence.event_day(actions[row['id']]['meaningful_date'])).days >= days_dormant]
 
 def get_upcoming_followups(days_ahead: int = 3) -> List[Dict[str, Any]]:
     with get_db() as conn:
-        target_str = (local_today() + timedelta(days=days_ahead)).isoformat()
-        query = """
-            SELECT app.*, j.title, j.company, j.job_url
-            FROM applications app
-            JOIN jobs j ON j.id = app.job_id
-            WHERE app.current_stage IN ('applied', 'knocked', 'recruiter_screen')
-              AND app.next_followup_date IS NOT NULL
-              AND app.next_followup_date <= ?
-            ORDER BY app.next_followup_date ASC
-        """
-        cursor = conn.execute(query, (target_str,))
-        return [dict(r) for r in cursor.fetchall()]
+        target = local_today() + timedelta(days=days_ahead)
+        actions = [item for item in cadence.schedules(conn) if item['kind'] == 'followup'
+                   and item['date'] and cadence.event_day(item['date']) <= target]
+        return [dict(conn.execute('SELECT a.*,j.title,j.company,j.job_url FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.id=?',
+                                  (item['application_id'],)).fetchone(), next_followup_date=item['date'], next_action=item)
+                for item in sorted(actions, key=lambda item: item['date'])]
 
 def update_job_company_recon(job_id: str, recon_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     with get_db() as conn:

@@ -27,42 +27,66 @@ import type { Job, JobAnalysisResult, JobDocumentsInfo, CompanyReconData } from 
 import { getJobIdentifierItems } from '../jobIdentifiers';
 import { useTimeSettings } from '../timeSettings';
 import { formatDate, formatDateTime, hasUnknownTimeZone } from '../time';
+import { NextActionPanel } from './NextActionPanel';
 
 interface JobDetailModalProps {
   job: Job | null;
   onClose: () => void;
-  onMoveStage?: (applicationId: string, toStage: string, outcome?: string) => void;
   onDeleteJob?: (jobId: string) => void;
   isLoading: boolean;
+  onCadenceUpdate?: (updated: Job) => void;
 }
 
-const STAGES_LIST = [
-  { key: 'saved', label: 'Saved' },
-  { key: 'applied', label: 'Applied' },
-  { key: 'knocked', label: 'Knocked' },
-  { key: 'recruiter_screen', label: 'Recruiter Screen' },
-  { key: 'assessment', label: 'Assessment' },
-  { key: 'team_match', label: 'Team Match' },
-  { key: 'technical_interview', label: 'Tech Interview' },
-  { key: 'final_round', label: 'Final Round' },
-  { key: 'offer', label: 'Offer 🎉' },
-  { key: 'closed', label: 'Closed' },
-];
+
 
 export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   job,
   onClose,
-  onMoveStage,
   onDeleteJob,
   isLoading,
+  onCadenceUpdate,
 }) => {
   const { settings } = useTimeSettings();
   const [activeTab, setActiveTab] = useState<'jd' | 'recon' | 'contacts' | 'resume' | 'cover_letter' | 'timeline'>('jd');
+  const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
+  const [timelineBusy, setTimelineBusy] = useState(false);
+  const [timelineNotice, setTimelineNotice] = useState('');
+  const [timelineError, setTimelineError] = useState('');
+  const [undoEventId, setUndoEventId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
   const [copiedJobIdentifier, setCopiedJobIdentifier] = useState<string | null>(null);
 
   const [currentJob, setCurrentJob] = useState<Job | null>(job);
+  async function correctTimeline(eventId: string, restore = false) {
+    if (!currentJob?.application || timelineBusy) return;
+    setTimelineBusy(true);
+    setTimelineError('');
+    try {
+      const base = `/api/pipeline/applications/${encodeURIComponent(currentJob.application.id)}/timeline/${encodeURIComponent(eventId)}`;
+      const response = await fetch(restore ? `${base}/restore` : base, { method: restore ? 'POST' : 'DELETE' });
+      const result = await response.json();
+      if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Could not update timeline.');
+      setDeleteEventId(null);
+      setUndoEventId(restore ? null : eventId);
+      setTimelineNotice(result.message);
+      const updatedResponse = await fetch(`/api/jobs/${encodeURIComponent(currentJob.id)}`);
+      if (!updatedResponse.ok) throw new Error('Change saved. Reopen this job to refresh the timeline.');
+      const updated = await updatedResponse.json() as Job;
+      setCurrentJob(updated);
+      onCadenceUpdate?.(updated);
+    } catch (err) {
+      setTimelineError(err instanceof Error ? err.message : 'Could not update timeline.');
+    } finally { setTimelineBusy(false); }
+  }
+
   const [isRematching, setIsRematching] = useState<boolean>(false);
+
+  useEffect(() => {
+    setDeleteEventId(null);
+    setTimelineNotice('');
+    setTimelineError('');
+    setUndoEventId(null);
+  }, [job?.id]);
 
   useEffect(() => {
     setCurrentJob(job);
@@ -577,56 +601,8 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                   })()}
                 </div>
 
-                {job.application && onMoveStage && (
-                  <div className="flex items-center gap-2 text-xs mr-6">
-                    <span className="text-slate-400 font-medium">Stage:</span>
-                    <select
-                      value={
-                        job.application.current_stage === 'closed' && job.application.outcome === 'rejected'
-                          ? 'closed:rejected'
-                          : job.application.current_stage
-                      }
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === 'closed:rejected') {
-                          onMoveStage(job.application.id, 'closed', 'rejected');
-                        } else if (val === 'closed') {
-                          onMoveStage(job.application.id, 'closed', job.application?.outcome === 'rejected' ? 'clear' : undefined);
-                        } else {
-                          onMoveStage(job.application.id, val);
-                        }
-                      }}
-                      className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500 font-medium"
-                    >
-                      {STAGES_LIST.filter((s) => s.key !== 'closed').map((s) => (
-                        <option key={s.key} value={s.key}>{s.label}</option>
-                      ))}
-                      <option value="closed">Closed</option>
-                      <option value="closed:rejected">Closed (Rejected ❌)</option>
-                    </select>
+                {job.application && <span className="text-xs text-slate-300">Stage: {job.application.current_stage === 'knocked' ? 'Contacted' : job.application.current_stage.replaceAll('_', ' ')}</span>}
 
-                    {job.application.current_stage === 'closed' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newOutcome = job.application?.outcome === 'rejected' ? 'clear' : 'rejected';
-                          onMoveStage(job.application.id, 'closed', newOutcome);
-                        }}
-                        className={`px-2 py-1 rounded-lg text-xs font-semibold border transition flex items-center gap-1.5 ${
-                          job.application.outcome === 'rejected'
-                            ? 'bg-red-950 text-red-300 border-red-800 hover:bg-red-900/60'
-                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-red-300 hover:border-red-900'
-                        }`}
-                        title={job.application.outcome === 'rejected' ? 'Click to clear Rejected outcome' : 'Click to mark as Rejected'}
-                      >
-                        <span className={job.application.outcome === 'rejected' ? 'text-red-400 font-bold' : 'text-slate-500'}>
-                          {job.application.outcome === 'rejected' ? '✕' : '+'}
-                        </span>
-                        <span>{job.application.outcome === 'rejected' ? 'Rejected' : 'Mark Rejected'}</span>
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
 
               <h2 className="text-xl font-bold text-white">{job.title}</h2>
@@ -819,7 +795,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               <Clock className={`h-3.5 w-3.5 shrink-0 ${activeTab === 'timeline' ? 'text-amber-400' : 'text-slate-400'}`} />
               <span className="whitespace-nowrap">Timeline</span>
               <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
-                {job?.timeline?.length || 0}
+                {activeJob?.timeline?.length || 0}
               </span>
             </button>
           </nav>
@@ -827,6 +803,13 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-1">
+          {(activeTab === 'jd' || activeTab === 'timeline') && activeJob?.next_action && <NextActionPanel key={activeJob.id} action={activeJob.next_action} currentStage={activeJob.application?.current_stage || 'saved'} onRecorded={async () => {
+            const response = await fetch(`/api/jobs/${activeJob.id}`);
+            if (!response.ok) throw new Error('Event saved. Refresh the job to load the updated timeline.');
+            const updated: Job = await response.json();
+            setCurrentJob(updated);
+            onCadenceUpdate?.(updated);
+          }} />}
           {isLoading || !job ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
@@ -1574,14 +1557,16 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
             renderDocumentPreview('cover_letter')
           ) : (
             <div className="space-y-3">
-              {(!job.timeline || job.timeline.length === 0) ? (
+              {timelineNotice && <p role="status" className="text-xs text-slate-300">{timelineNotice} {undoEventId && <button disabled={timelineBusy} onClick={() => void correctTimeline(undoEventId, true)} className="ml-2 text-amber-300 underline disabled:opacity-50">Undo</button>}</p>}
+              {timelineError && <p role="alert" className="text-xs text-red-300">{timelineError}</p>}
+              {(!activeJob?.timeline || activeJob.timeline.length === 0) ? (
                 <div className="text-center py-10 border border-dashed border-slate-800 rounded-xl">
                   <Clock className="h-10 w-10 text-slate-600 mx-auto mb-2" />
                   <p className="text-sm text-slate-400">No timeline events recorded yet.</p>
                 </div>
               ) : (
                 <div className="relative border-l border-slate-800 ml-4 space-y-6">
-                  {job.timeline.map((event) => (
+                  {activeJob.timeline.map((event) => (
                     <div key={event.id} className="relative pl-6">
                       <div className="absolute -left-1.5 top-1.5 h-3 w-3 rounded-full bg-amber-500 border-2 border-slate-900"></div>
                       <div className="flex items-center justify-between text-xs text-slate-400">
@@ -1591,6 +1576,13 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                           {hasUnknownTimeZone(event.occurred_at) && ' · time zone not recorded'}
                         </span>
                       </div>
+                      <div className="mt-2 flex items-center gap-2 text-xs">
+                        {deleteEventId === event.id ? <>
+                          <span className="text-slate-400">Delete this event? You can undo it.</span>
+                          <button disabled={timelineBusy} onClick={() => void correctTimeline(event.id)} className="text-red-300 hover:text-red-200 disabled:opacity-50">Confirm delete</button>
+                          <button disabled={timelineBusy} onClick={() => setDeleteEventId(null)} className="text-slate-400 hover:text-white">Cancel</button>
+                        </> : <button disabled={timelineBusy} onClick={() => setDeleteEventId(event.id)} aria-label={`Delete timeline event: ${event.title}`} className="flex items-center gap-1 text-slate-500 hover:text-red-300 disabled:opacity-50"><Trash2 className="h-3 w-3" />Delete</button>}
+                      </div>
                       {event.description && (
                         <p className="text-xs text-slate-400 mt-1">{event.description}</p>
                       )}
@@ -1598,6 +1590,10 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                   ))}
                 </div>
               )}
+              {!!activeJob?.deleted_timeline?.length && <details className="border-t border-slate-800 pt-3 text-xs text-slate-500">
+                <summary className="cursor-pointer">Deleted events ({activeJob.deleted_timeline.length})</summary>
+                <div className="mt-3 space-y-2">{activeJob.deleted_timeline.map((event) => <div key={event.id} className="flex items-center justify-between gap-3"><span>{event.title} · {formatDate(event.occurred_at, settings.timezone)}</span><button disabled={timelineBusy} onClick={() => void correctTimeline(event.id, true)} className="text-amber-300 disabled:opacity-50">Restore</button></div>)}</div>
+              </details>}
             </div>
           )}
         </div>

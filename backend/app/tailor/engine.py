@@ -336,8 +336,12 @@ async def tailor_application_documents(
 
     education = (resume_payload or {}).get("education", [])
 
+    active_candidate = dict(candidate)
+    if authored_documents and isinstance(authored_documents.get("candidate"), dict):
+        active_candidate.update(authored_documents["candidate"])
+
     resume_context = {
-        "candidate": candidate,
+        "candidate": active_candidate,
         "resume": {
             "target_role": target_role_header,
             "summary": (resume_payload or {}).get("summary", ""),

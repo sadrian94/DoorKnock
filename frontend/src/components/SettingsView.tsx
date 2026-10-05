@@ -289,7 +289,7 @@ export const SettingsView: React.FC = () => {
           <li><span className="font-medium">Set up Gmail once.</span> DoorKnock needs a one-time Google setup before anyone can connect. If you did not install DoorKnock yourself, ask the person who did to complete the setup below.</li>
           <li><span className="font-medium">Connect your account.</span> Click Connect Gmail, sign in to Google, allow read-only access, then return here and click Check connection.</li>
           <li><span className="font-medium">Choose a scan size.</span> Pick how many recent days to check and how many messages to read per scan. The defaults are 14 days and 150 messages.</li>
-          <li><span className="font-medium">Scan and review.</span> Click Scan Gmail. Clear messages can update stages. Uncertain ones appear in Needs review, where you can open the original email and decide. If more messages remain, use Scan next page.</li>
+          <li><span className="font-medium">Scan and review.</span> Click Scan Gmail. Application messages appear in Email review. Open the original email and confirm any stage change. If more messages remain, use Scan next page.</li>
         </ol>
         <div className="rounded-lg border border-amber-700/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
           Scanning can change a stage immediately when a message clearly matches one application and confirms an application, recruiter screen, or rejection. Uncertain messages wait for your decision. No emails are sent or changed in Gmail.
@@ -325,7 +325,7 @@ export const SettingsView: React.FC = () => {
         </div>
         {gmailMessage && <p role="status" className="text-sm text-slate-200">{gmailMessage}</p>}
         {gmailReviews.length > 0 && <div className="space-y-3 rounded-lg border border-amber-700/40 bg-slate-950/60 p-4">
-          <h4 className="text-sm font-semibold text-white">Needs review ({gmailReviews.length})</h4>
+          <h4 className="text-sm font-semibold text-white">Email review ({gmailReviews.length})</h4>
           <p className="text-xs text-slate-400">Open each message in Gmail to check the details. Choose an application and stage only when the email supports the change.</p>
           {gmailReviews.map(item => {
             const choice = reviewChoices[item.message_id] || { applicationId: '', stage: '' };
@@ -336,13 +336,13 @@ export const SettingsView: React.FC = () => {
                 <label className="text-xs text-slate-400">Application
                   <select aria-label="Application to update" value={choice.applicationId} onChange={event => setReviewChoices(current => ({ ...current, [item.message_id]: { ...choice, applicationId: event.target.value } }))} className="mt-1 block max-w-72 rounded border border-slate-700 bg-slate-900 px-2 py-2 text-sm text-white">
                     <option value="">Choose application</option>
-                    {gmailApplications.map(app => <option key={app.id} value={app.id}>{app.company} · {app.title} ({app.current_stage.replaceAll('_', ' ')}){item.candidate_application_ids.includes(app.id) ? ' · possible match' : ''}</option>)}
+                    {gmailApplications.map(app => <option key={app.id} value={app.id}>{app.company} · {app.title} ({app.current_stage === 'knocked' ? 'Contacted' : app.current_stage.replaceAll('_', ' ')}){item.candidate_application_ids.includes(app.id) ? ' · possible match' : ''}</option>)}
                   </select>
                 </label>
                 <label className="text-xs text-slate-400">Stage
                   <select aria-label="Stage to set" value={choice.stage} onChange={event => setReviewChoices(current => ({ ...current, [item.message_id]: { ...choice, stage: event.target.value } }))} className="mt-1 block rounded border border-slate-700 bg-slate-900 px-2 py-2 text-sm text-white">
                     <option value="">Choose stage</option>
-                    {reviewStages.map(stage => <option key={stage} value={stage}>{stage.replaceAll('_', ' ')}</option>)}
+                    {reviewStages.map(stage => <option key={stage} value={stage}>{stage === 'knocked' ? 'Contacted' : stage.replaceAll('_', ' ')}</option>)}
                   </select>
                 </label>
               </div>

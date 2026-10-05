@@ -1,5 +1,6 @@
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any, Literal
+from datetime import date, datetime
+from pydantic import BaseModel, Field, ConfigDict
 
 class JobBase(BaseModel):
     title: str
@@ -67,6 +68,19 @@ class StageTransitionRequest(BaseModel):
     to_stage: str
     outcome: Optional[str] = None
     note: Optional[str] = None
+
+class CadenceEventRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    event_type: str
+    occurred_at: Optional[datetime] = None
+    due_date: Optional[date] = None
+    expected_response_date: Optional[date] = None
+    action_date: Optional[date] = None
+    review_after: Optional[date] = None
+    contact_scope: Literal['cold', 'warm'] = 'cold'
+    interview_stage: Optional[Literal['recruiter_screen', 'team_match', 'technical_interview', 'final_round']] = None
+    to_stage: Optional[str] = None
+    outcome: Optional[Literal['rejected', 'withdrawn', 'offer_accepted', 'offer_declined', 'ghosted']] = None
 
 class KanbanCard(BaseModel):
     application_id: str

@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 
 from .config import DATA_DIR
 from .crud import KANBAN_STAGES
+from .cadence import business_days, event_day
 from .database import get_db
 
 TOKEN_PATH = DATA_DIR / "gmail-token.json"
@@ -195,7 +196,12 @@ def _change_stage(conn, application_id: str, current: str, to_stage: str,
                   event_code: str, received_at: str, message_id: str, reviewed: bool = False) -> None:
     now = utc_now().isoformat()
     outcome = "rejected" if to_stage == "closed" and event_code == "rejected" else None
-    followup = (date.fromisoformat(local_date_of(now)) + timedelta(days=3)).isoformat() if to_stage in ("applied", "knocked") else None
+    previous = conn.execute('SELECT applied_date,next_followup_date FROM applications WHERE id=?', (application_id,)).fetchone()
+    followup = previous['next_followup_date']
+    if to_stage == 'applied' and current != 'applied':
+        followup = business_days(event_day(previous['applied_date']) or date.fromisoformat(local_date_of(received_at)), 10).isoformat()
+    elif to_stage == 'knocked' and current != 'knocked':
+        followup = None
     conn.execute("""
         UPDATE applications SET current_stage = ?, outcome = ?,
             applied_date = CASE WHEN ? = 'applied' THEN COALESCE(applied_date, ?) ELSE applied_date END,

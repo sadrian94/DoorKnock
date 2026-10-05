@@ -8,7 +8,6 @@ import { daysAgo, hasUnknownTimeZone } from '../time';
 interface KanbanBoardProps {
   stages: Record<string, KanbanCard[]>;
   onSelectJob: (jobId: string) => void;
-  onMoveStage: (applicationId: string, toStage: string, outcome?: string) => void;
   isLoading: boolean;
 }
 
@@ -22,7 +21,7 @@ interface StageMeta {
 const STAGES_CONFIG: StageMeta[] = [
   { key: 'saved', label: 'Saved', badgeColor: 'bg-slate-800 text-slate-300', borderColor: 'border-slate-700' },
   { key: 'applied', label: 'Applied', badgeColor: 'bg-blue-950 text-blue-300', borderColor: 'border-blue-800/60' },
-  { key: 'knocked', label: 'Knocked', badgeColor: 'bg-amber-950 text-amber-300', borderColor: 'border-amber-800/60' },
+  { key: 'knocked', label: 'Contacted', badgeColor: 'bg-amber-950 text-amber-300', borderColor: 'border-amber-800/60' },
   { key: 'recruiter_screen', label: 'Recruiter Screen', badgeColor: 'bg-purple-950 text-purple-300', borderColor: 'border-purple-800/60' },
   { key: 'assessment', label: 'Assessment', badgeColor: 'bg-indigo-950 text-indigo-300', borderColor: 'border-indigo-800/60' },
   { key: 'team_match', label: 'Team Match', badgeColor: 'bg-cyan-950 text-cyan-300', borderColor: 'border-cyan-800/60' },
@@ -60,7 +59,6 @@ const getInitialHideEmpty = (): boolean => {
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   stages,
   onSelectJob,
-  onMoveStage,
   isLoading,
 }) => {
   const { settings } = useTimeSettings();
@@ -270,42 +268,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                   <span className="truncate">{card.company}</span>
                                 </div>
 
-                                {card.current_stage === 'closed' ? (
-                                  card.outcome === 'rejected' ? (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onMoveStage(card.application_id, 'closed', 'clear');
-                                      }}
-                                      className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-red-950 text-red-300 border border-red-800 hover:bg-red-900 transition flex items-center gap-1 shadow-sm"
-                                      title="Rejected application. Click to clear outcome."
-                                    >
-                                      <span className="text-red-400">✕</span>
-                                      <span>Rejected</span>
-                                    </button>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onMoveStage(card.application_id, 'closed', 'rejected');
-                                      }}
-                                      className="text-[10px] text-slate-500 hover:text-red-400 hover:border-red-900 border border-dashed border-slate-800 rounded px-1.5 py-0.5 transition"
-                                      title="Click to add Rejected label"
-                                    >
-                                      + Rejected
-                                    </button>
-                                  )
-                                ) : (card.current_stage === 'closed' || card.current_stage === 'offer') && card.outcome ? (
-                                  <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
-                                    isOutcomeRejected
-                                      ? 'bg-red-950 text-red-400 border border-red-800'
-                                      : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                                  }`}>
-                                    {card.outcome}
-                                  </span>
-                                ) : null}
+                                {card.outcome && <span className="text-[10px] text-slate-400">{card.outcome.replaceAll('_', ' ')}</span>}
+
                               </div>
 
                               {/* Title */}
@@ -327,6 +291,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                               </div>
 
                               {/* Timeline indicator & Touchpoints */}
+                              {card.next_action && card.next_action.state !== 'closed' && (
+                                <p className="mt-2 text-[10px] text-amber-300">{card.next_action.state === 'waiting' ? 'Waiting for response' : card.next_action.label}</p>
+                              )}
                               <div className="flex items-center justify-between text-[10px] text-slate-500 mt-3 pt-2 border-t border-slate-800/80">
                                 {daysAgo && (
                                   <span className="flex items-center gap-1 text-slate-400"
@@ -395,28 +362,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                 Detail
                               </button>
 
-                              <select
-                                value={card.current_stage === 'closed' && card.outcome === 'rejected' ? 'closed:rejected' : card.current_stage}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (val === 'closed:rejected') {
-                                    onMoveStage(card.application_id, 'closed', 'rejected');
-                                  } else if (val === 'closed') {
-                                    onMoveStage(card.application_id, 'closed', card.outcome === 'rejected' ? 'clear' : undefined);
-                                  } else {
-                                    onMoveStage(card.application_id, val);
-                                  }
-                                }}
-                                className="bg-slate-900 border border-slate-700 text-[10px] text-slate-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-amber-500"
-                              >
-                                {STAGES_CONFIG.filter((s) => s.key !== 'closed').map((s) => (
-                                  <option key={s.key} value={s.key}>
-                                    Move: {s.label}
-                                  </option>
-                                ))}
-                                <option value="closed">Move: Closed</option>
-                                <option value="closed:rejected">Move: Closed (Rejected ❌)</option>
-                              </select>
+                              <button onClick={() => onSelectJob(card.job_id)} className="text-xs text-amber-300">Update progress</button>
                             </div>
                           </div>
                         );
