@@ -34,6 +34,25 @@ def test_supported_exact_facts_pass():
     validate_resume_evidence(resume, EVIDENCE)
 
 
+@pytest.mark.parametrize("following_text", ["MAE", "mean absolute error", "budget variance"])
+def test_metric_words_are_not_numeric_scale_suffixes(following_text):
+    evidence = EVIDENCE + f"metrics: ['$12,345 {following_text}']\n"
+    resume = {"summary": "Evaluation returned *$12,345* in error.",
+              "experiences": [], "education": [], "projects": [], "certifications": ""}
+    validate_resume_evidence(resume, evidence)
+
+
+@pytest.mark.parametrize("suffix", ["K", "M", "B"])
+def test_explicit_numeric_scale_suffixes_remain_distinct(suffix):
+    evidence = EVIDENCE + f"metrics: ['$73{suffix}']\n"
+    resume = {"summary": f"Reported $73{suffix}.",
+              "experiences": [], "education": [], "projects": [], "certifications": ""}
+    validate_resume_evidence(resume, evidence)
+    resume["summary"] = "Reported $73"
+    with pytest.raises(ValueError, match="numbers absent from master evidence"):
+        validate_resume_evidence(resume, evidence)
+
+
 @pytest.mark.parametrize("change", [
     {"company": "Other Company"},
     {"title": "Senior Operations Analyst"},

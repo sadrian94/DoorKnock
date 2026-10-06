@@ -7,7 +7,7 @@ metadata:
 
 # DoorKnock Tailor Skill
 
-Use this skill when tailoring an ATS resume or a cover letter for a job in DoorKnock. Generate only the document type the user requested. Each type has its own version sequence. Resume page count is unrestricted by default; users can require one page in DoorKnock Settings.
+Use this skill when tailoring an ATS resume or a cover letter for a job in DoorKnock. Generate only the document type the user requested. Each type has its own version sequence. Resume v001 always permits multiple pages. Later resume versions are unrestricted by default; users can require one page for those revisions in DoorKnock Settings.
 
 ## Core Philosophy
 
@@ -30,7 +30,7 @@ Use this skill when tailoring an ATS resume or a cover letter for a job in DoorK
    - Clean horizontal divider rules under uppercase section headings.
    - Flush right-aligned dates, locations, and degree graduation years (`align: (left, right)`).
    - Left-aligned `CERTIFICATIONS` section.
-   - Compile a readable resume with enough space for the strongest relevant evidence. Require one page only when the saved resume preference requests it; do not force a utilization percentage.
+   - Compile a readable resume with enough space for the strongest relevant evidence. Resume v001 always permits multiple pages, even when the saved one-page preference is enabled. Apply that preference only to later resume versions; do not force a utilization percentage.
    - The compiler will not shrink resume body text below 9.3pt. If the content does not fit, edit for relevance or report the limit; do not bypass it with smaller type.
    - Candidate-facing clean naming: `[Name]_Resume_[Company].pdf` and `[Name]_Cover_Letter_[Company].pdf`.
 5. **JD-Driven Selection**:

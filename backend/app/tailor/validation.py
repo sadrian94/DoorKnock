@@ -6,7 +6,8 @@ from typing import Any
 import yaml
 
 
-_NUMBER = re.compile(r"(?<![\w])\$?\d[\d,.]*(?:\s?[KMB])?%?", re.IGNORECASE)
+# A scale suffix must be a whole unit, not the first letter of MAE, mean, or budget.
+_NUMBER = re.compile(r"(?<![\w])\$?\d[\d,.]*(?:\s?[KMB](?!\w))?%?", re.IGNORECASE)
 
 
 def _normal(value: Any) -> str:

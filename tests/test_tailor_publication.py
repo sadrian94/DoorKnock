@@ -50,6 +50,73 @@ def synthetic_candidate(monkeypatch):
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("single_page_preference", [True, False])
+@pytest.mark.parametrize("authored", [True, False])
+async def test_first_resume_allows_multiple_pages_then_follows_preference(
+    tmp_path, monkeypatch, synthetic_candidate, single_page_preference, authored,
+):
+    monkeypatch.setattr(engine, "get_resume_settings", lambda: {
+        "require_single_page": single_page_preference,
+    })
+    summary = "Checked operational records and documented discrepancies for team review. " * 160
+
+    class LongResumeClient(FakeClient):
+        async def generate_json(self, **kwargs):
+            if "Write only the resume Summary" in kwargs["prompt"]:
+                self.prompts.append(kwargs["prompt"])
+                return {"summary": summary}
+            return await super().generate_json(**kwargs)
+
+    package = {
+        "tailor_strategy": {"target_role_header": "ANALYST", "primary_angle": "Synthetic fit"},
+        "resume": {"summary": summary, "experiences": [], "projects": [],
+                   "skills": [], "education": [], "certifications": ""},
+    }
+    job = {"id": "synthetic-job", "company": "Apex Logistics", "title": "Analyst", "raw_text": "Analyze data"}
+    # A cover letter has its own version series and must still reject multiple pages.
+    rejected_letter = await engine.tailor_application_documents(
+        job, document_type="cover_letter", custom_output_dir=tmp_path,
+        authored_documents={"cover_letter": {"paragraphs": [summary]}},
+    )
+    assert not rejected_letter["success"]
+    assert rejected_letter["compilation"]["page_limit_required"]
+    assert not (tmp_path / "cover-letter" / "v001").exists()
+    letter = await engine.tailor_application_documents(
+        job, document_type="cover_letter", custom_output_dir=tmp_path,
+        authored_documents={"cover_letter": {"paragraphs": ["Checked operational records for review."]}},
+    )
+    assert letter["success"]
+
+    client = LongResumeClient()
+    arguments = {"authored_documents": package} if authored else {"gemini_client": client}
+    first = await engine.tailor_application_documents(job, custom_output_dir=tmp_path, **arguments)
+    assert first["success"], first.get("compilation")
+    assert first["manifest"]["version"] == "v001"
+    assert first["manifest"]["page_count"] > 1
+    assert not first["manifest"]["page_limit_required"]
+    first_pdf = Path(first["pdf"]).read_bytes()
+    reader = PdfReader(first["pdf"])
+    assert len(reader.pages) > 1
+    assert "SUMMARY" in reader.pages[0].extract_text()
+    if not authored:
+        assert "two pages are acceptable" in client.prompts[1]
+
+    second = await engine.tailor_application_documents(job, custom_output_dir=tmp_path, **arguments)
+    if single_page_preference:
+        assert not second["success"]
+        assert second["compilation"]["page_limit_required"]
+        assert second["compilation"]["page_count"] > 1
+        assert not (tmp_path / "resume" / "v002").exists()
+        latest = json.loads((tmp_path / "workspace-metadata.json").read_text(encoding="utf-8"))
+        assert latest["documents"]["resume"]["version"] == "v001"
+    else:
+        assert second["success"]
+        assert second["manifest"]["version"] == "v002"
+        assert not second["manifest"]["page_limit_required"]
+    assert Path(first["pdf"]).read_bytes() == first_pdf
+
+
+@pytest.mark.anyio
 async def test_retailor_publishes_distinct_versions(tmp_path, monkeypatch, synthetic_candidate):
     def fake_compile(_template, _context, output_dir, base_filename, **_kwargs):
         output_dir.mkdir(parents=True, exist_ok=True)

@@ -399,7 +399,7 @@ export const SettingsView: React.FC = () => {
       <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
         <div>
           <h3 className="text-lg font-semibold text-white">Resume formatting</h3>
-          <p className="text-sm text-slate-400 mt-1">Choose whether tailored resumes must fit on one page.</p>
+          <p className="text-sm text-slate-400 mt-1">The first resume (v001) can use multiple pages. Choose the page limit for later versions.</p>
         </div>
         <label className="flex items-start gap-3 text-sm text-slate-200">
           <input
@@ -410,7 +410,7 @@ export const SettingsView: React.FC = () => {
             className="mt-1 accent-amber-500"
           />
           <span>
-            Require resumes to fit on one page
+            Require later resume versions to fit on one page
             <span className="block text-xs text-slate-400 mt-1">
               Off by default. When off, multi-page resumes are allowed and still checked for valid PDF content.
             </span>

@@ -203,7 +203,6 @@ async def tailor_application_documents(
     if document_type not in ("resume", "cover_letter"):
         raise ValueError("document_type must be resume or cover_letter")
     resume_preferences = get_resume_settings()
-    require_single_page = resume_preferences["require_single_page"] if document_type == "resume" else True
     base_info = load_candidate_base_context()
     candidate = base_info["candidate"]
     candidate_evidence = base_info["candidate_evidence_context"]
@@ -224,6 +223,12 @@ async def tailor_application_documents(
     else:
         app_dir = _application_dir(job_data, company, title, today_stamp)
     app_dir.mkdir(parents=True, exist_ok=True)
+
+    # Preserve a complete first resume before applying optional page limits to revisions.
+    require_single_page = (
+        resume_preferences["require_single_page"] and _next_version_number(app_dir, "resume") > 1
+        if document_type == "resume" else True
+    )
 
     recon_json = job_data.get("company_recon_json") or job_data.get("company_recon")
     recon_summary = "Not available."
