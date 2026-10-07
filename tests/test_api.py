@@ -198,6 +198,23 @@ def test_trigger_tailor_api_reports_page_limit(client, monkeypatch):
     assert res.status_code == 500
     assert res.json()["detail"] == "Document exceeds one page (2 pages)"
 
+
+def test_trigger_tailor_api_reports_claim_review_instead_of_pdf_error(client, monkeypatch):
+    from app.api import documents
+    job_id = _create_synthetic_job(client)["job"]["id"]
+
+    async def reviewed(job, document_type):
+        return {"success": False, "error": "Claim review requires revision before publication",
+                "keyword_review": {"claim_review": {"status": "needs_revision", "findings": [{
+                    "section": "summary", "quote": "Managed product catalogs",
+                    "issue": "Unsupported product catalog ownership", "suggestion": "Describe record checks",
+                }]}}}
+
+    monkeypatch.setattr(documents, "tailor_application_documents", reviewed)
+    res = client.post(f"/api/jobs/{job_id}/tailor/resume")
+    assert res.status_code == 409
+    assert "Unsupported product catalog ownership" in res.json()["detail"]
+
 def test_contacts_and_outreach_api_flow(client):
     job_id = _create_synthetic_job(client)["job"]["id"]
 

@@ -15,6 +15,10 @@ class FakeClient:
     async def generate_json(self, **kwargs):
         prompt = kwargs["prompt"]
         self.prompts.append(prompt)
+        alignment = [{"keyword": "data", "requirement": "Analyze data", "support": "unsupported",
+                      "evidence_ids": [], "placements": [], "boundary": "No work evidence in this fixture."}]
+        if "Review the completed document" in prompt:
+            return {"claim_review": {"status": "ready", "findings": []}}
         if "Write only the resume Experience and Projects" in prompt:
             return {"experiences": [], "projects": []}
         if "Write only resume Skills, Education" in prompt:
@@ -23,7 +27,9 @@ class FakeClient:
             return {"summary": "Synthetic summary"}
         if "cover letter" in prompt.lower():
             return {"paragraphs": ["Synthetic letter"]}
-        return {"target_role_header": "ANALYST", "primary_angle": "Synthetic fit"}
+        if 'Allowed placements: paragraphs' in prompt:
+            return {"keyword_alignment": alignment}
+        return {"target_role_header": "ANALYST", "primary_angle": "Synthetic fit", "keyword_alignment": alignment}
 
 
 class MissingSummaryClient(FakeClient):
@@ -136,8 +142,8 @@ async def test_retailor_publishes_distinct_versions(tmp_path, monkeypatch, synth
         custom_output_dir=tmp_path, gemini_client=letter_client)
 
     assert first["success"] and second["success"] and letter["success"]
-    assert len(client.prompts) == 4
-    assert len(letter_client.prompts) == 1
+    assert len(client.prompts) == 5
+    assert len(letter_client.prompts) == 3
     assert "Selected resume:" in client.prompts[3]
     assert first["manifest"]["version"] == "v001"
     assert second["manifest"]["version"] == "v002"

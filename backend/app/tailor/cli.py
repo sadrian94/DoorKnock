@@ -59,7 +59,9 @@ async def run_cli():
                                              authored_documents=authored_documents)
 
     if not res.get("success"):
-        print("Error: Document tailoring or Typst compilation failed.", file=sys.stderr)
+        print("Error: " + res.get("error", "Document tailoring or Typst compilation failed."), file=sys.stderr)
+        for finding in (res.get("keyword_review", {}).get("claim_review", {}).get("findings", [])):
+            print(f"{finding['section']}: {finding['issue']} — {finding['suggestion']}", file=sys.stderr)
         sys.exit(1)
 
     manifest = res.get("manifest", {})
@@ -72,6 +74,8 @@ async def run_cli():
     print(f"\nArtifacts Directory: {res.get('application_dir')}")
     print(f"Document type: {args.document_type}")
     print(f"PDF: {res.get('pdf')}")
+    print(f"Keyword review: {manifest.get('keyword_review')}")
+    print(f"Alignment status: {manifest.get('alignment_status')}")
     print("="*60 + "\n")
 
 def main():

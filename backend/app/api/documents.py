@@ -55,6 +55,10 @@ async def trigger_document_tailoring(job_id: str, doc_type: str):
     try:
         result = await tailor_application_documents(job, document_type=normalized_type)
         if not result.get("success"):
+            review = (result.get("keyword_review") or {}).get("claim_review") or {}
+            if review.get("status") == "needs_revision":
+                issues = "; ".join(f"{f['section']}: {f['issue']} — {f['suggestion']}" for f in review["findings"])
+                raise HTTPException(status_code=409, detail=f"Claim review requires revision: {issues}")
             compilation = result.get("compilation") or {}
             if compilation.get("error"):
                 reason = f"Typst compilation failed: {compilation['error']}"
@@ -74,7 +78,7 @@ async def trigger_document_tailoring(job_id: str, doc_type: str):
             "manifest": result.get("manifest"),
         }
     except ValueError as e:
-        logger.warning("Document generation needs updated job analysis for %s: %s", job_id, e)
+        logger.warning("Document generation needs correction for %s: %s", job_id, e)
         raise HTTPException(status_code=409, detail=str(e)) from e
     except HTTPException:
         raise

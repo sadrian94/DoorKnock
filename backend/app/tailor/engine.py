@@ -17,6 +17,10 @@ from ..ai.provider import AIClient, get_ai_client
 from .compiler import compile_document
 from .settings import get_resume_settings
 from .validation import validate_resume_evidence
+from .alignment import (
+    ALIGNMENT_INSTRUCTION, REVIEW_INSTRUCTION, evidence_index,
+    validate_alignment, validate_claim_review, keyword_report,
+)
 from .naming import (
     sanitize_slug,
     generate_document_filename,
@@ -253,12 +257,18 @@ async def tailor_application_documents(
     strategy = None
     resume_payload = None
     letter_payload = None
+    alignment = None
+    claim_review = None
     if authored_documents is not None:
         if not isinstance(authored_documents, dict):
             raise ValueError("Agent-authored document package must be a JSON object")
         strategy = authored_documents.get("tailor_strategy")
         resume_payload = authored_documents.get("resume")
         letter_payload = authored_documents.get("cover_letter")
+        if "keyword_alignment" in authored_documents or "claim_review" in authored_documents:
+            alignment = authored_documents.get("keyword_alignment")
+            claim_review = authored_documents.get("claim_review")
+            validate_alignment(alignment, raw_text, evidence_index(candidate_evidence), document_type)
         if document_type == "resume":
             if not isinstance(strategy, dict) or not isinstance(resume_payload, dict):
                 raise ValueError("Agent-authored resume requires tailor_strategy and resume objects")
@@ -280,8 +290,10 @@ async def tailor_application_documents(
             location=location,
             company_recon_summary=recon_summary,
             match_analysis_context=match_analysis_context,
-            raw_job_text=raw_text[:10000],
+            raw_job_text=raw_text,
         )
+        index = evidence_index(candidate_evidence)
+        context += "\nEvidence index (IDs with provenance):\n" + json.dumps(index, ensure_ascii=False)
 
         page_guidance = (
             "Keep the resume to one page."
@@ -296,30 +308,56 @@ async def tailor_application_documents(
 
         if document_type == "resume":
             strategy = await _generate_part(client, context,
-        'Select the strongest evidence-based fit for this role. Return {"target_role_header": "<concise role heading, not an employment claim>", "primary_angle": "<one-sentence evidence-based fit>"}.', ("target_role_header", "primary_angle"))
+        'Select the strongest evidence-based fit for this role. ' + ALIGNMENT_INSTRUCTION + ' Allowed placements: summary, experiences, projects, skills. Return {"target_role_header": "<concise role heading, not an employment claim>", "primary_angle": "<one-sentence evidence-based fit>", "keyword_alignment": [<entries>]}.', ("target_role_header", "primary_angle", "keyword_alignment"))
+            alignment = strategy.pop("keyword_alignment")
+            validate_alignment(alignment, raw_text, index, document_type)
+            context += "\nKeyword alignment plan:\n" + json.dumps(alignment, ensure_ascii=False)
+            context += "\nUse supported JD terms naturally in the planned sections. Preserve each boundary; never place an unsupported requirement as a candidate skill."
             body = await _generate_part(client, context + "\nSelected positioning:\n" + json.dumps(strategy, ensure_ascii=False),
         resume_sections_instruction, ("experiences", "projects"))
             credentials = await _generate_part(client, context + "\nSelected resume content:\n" + json.dumps(body, ensure_ascii=False),
         'Write only resume Skills, Education and Certifications. Include supported, role-relevant skill names without parenthetical provenance labels such as (coursework); retain the evidence boundary and do not imply paid use of a skill supported only by study. Preserve exact degree and certification facts. Avoid repeating a tool in several categories. Return {"skills": [{"category": "", "items": "<comma-separated supported skills>"}], "education": [{"institution": "", "degree": "", "year": "", "location": "", "focus": ""}], "certifications": ""}. Use empty values when unsupported.', ("skills", "education", "certifications"))
             resume_payload = {**body, **credentials}
             summary = await _generate_part(client, context + "\nSelected resume:\n" + json.dumps(resume_payload, ensure_ascii=False),
-        'Write only the resume Summary for a human reader: a brief, natural overview of relevant work the candidate has done and one or two strengths that match the role. Lead with concrete work rather than a target-title label, aspiration, or list of abstract capabilities. Mention a career transition only if it clarifies the fit, and only once. Base every phrase on candidate evidence and the selected resume; do not imply the candidate already holds the target title. Do not repeat bullet metrics, claim inferred business effects, or list keywords. Return {"summary": "<brief specific summary>"}.', ("summary",))
+        'Write only the resume Summary for a human reader: a brief, natural overview of relevant work the candidate has done and one or two strengths that match the role. Lead with concrete work rather than a target-title label, aspiration, or list of abstract capabilities. Mention a career transition only if it clarifies the fit, and only once. Base every phrase on candidate evidence and the selected resume; do not imply the candidate already holds the target title. Use a supported JD term when it clarifies the work; do not stack keywords, repeat bullet metrics or claim inferred business effects. Return {"summary": "<brief specific summary>"}.', ("summary",))
             resume_payload["summary"] = summary.get("summary", "")
         else:
+            plan = await _generate_part(client, context,
+                ALIGNMENT_INSTRUCTION + ' Allowed placements: paragraphs. Return {"keyword_alignment": [<entries>]}.',
+                ("keyword_alignment",))
+            alignment = plan["keyword_alignment"]
+            validate_alignment(alignment, raw_text, index, document_type)
+            context += "\nKeyword alignment plan:\n" + json.dumps(alignment, ensure_ascii=False)
             cover_letter_prompt = (
                 "Write an authentic, highly compelling single-page cover letter in 3-4 concise paragraphs following the Sepia professional standard.\n"
                 "Architecture:\n"
-                "1. Hook: Start from the employer's acute operational reality, technical friction, or domain challenge (draw from company recon and posting). Do not open with 'I am writing to apply...' or generic introductions. State the candidate's core operating ethos.\n"
+                "1. Hook: Start from a stated priority in the posting. Do not invent employer problems, losses or consequences from recon or general industry assumptions. Do not open with 'I am writing to apply...' or generic introductions. State the candidate's core operating ethos.\n"
                 "2. Grounded Proof / War Story: Highlight a concrete technical accomplishment from candidate evidence showing how the candidate structured work, enforced constraints/contracts, tested rigorously, or recovered from failures. Show actual methods and boundaries, not bare buzzwords.\n"
                 "3. Domain & Operational Context: Connect the candidate's verified background to the company's real business risk and operational environment (e.g. data integrity, transaction risk, system reliability).\n"
                 "4. Conviction & Boundaries: Confident close emphasizing disciplined verification, respecting review/rollback procedures, and readiness to take ownership under technical guidance.\n"
                 "Negative Constraints (Sepia De-AI):\n"
-                "- Never parrot the job posting verbatim or echo requirements back as hollow claims.\n"
+                "- Use supported JD terms in one or two concrete examples, preserving original domains and boundaries. Never parrot full JD sentences or echo requirements back as hollow claims.\n"
                 "- Ban generative boilerplate: 'directly aligns with', 'testament to', 'I welcome the opportunity to discuss', 'Holding a degree...', 'foster', 'elevate', 'harness', 'seamless', 'delve'.\n"
                 "- Keep syntax active, direct, and speech-shaped. Never invent unverified candidate facts or metrics.\n"
                 'Return {"paragraphs": ["<p1>", "<p2>", "<p3>", "<p4>"], "recipient_title": "<targeted title e.g. Engineering Hiring Team>", "salutation": "<clean name without Dear, e.g. TRG Engineering Team>"}.'
             )
             letter_payload = await _generate_part(client, context, cover_letter_prompt, ("paragraphs",))
+
+        payload = resume_payload if document_type == "resume" else letter_payload
+        reviewed = await _generate_part(client,
+            context + "\nCompleted document:\n" + json.dumps(payload, ensure_ascii=False),
+            REVIEW_INSTRUCTION, ("claim_review",))
+        claim_review = reviewed["claim_review"]
+
+    payload = resume_payload if document_type == "resume" else letter_payload
+    if alignment is not None or claim_review is not None:
+        validate_claim_review(claim_review, payload, document_type)
+    review_report = keyword_report(alignment, claim_review, payload, document_type, raw_text, candidate_evidence,
+                                   "agent" if authored_documents is not None else "provider")
+    if review_report["status"] == "needs_revision":
+        return {"success": False, "application_dir": str(app_dir), "document_type": document_type,
+                "pdf": None, "manifest": None, "keyword_review": review_report,
+                "error": "Claim review requires revision before publication"}
 
     # Step 2: Prepare Contexts
     target_role_header = (strategy or {}).get("target_role_header") or title.upper()
@@ -390,6 +428,10 @@ async def tailor_application_documents(
             return {"success": False, "application_dir": str(app_dir), "document_type": document_type,
                     "pdf": None, "manifest": None, "compilation": compiled}
 
+        # The sidecar travels with the immutable document, never into tracked source.
+        (stage_dir / "keyword-review.json").write_text(
+            json.dumps(review_report, indent=2, ensure_ascii=False), encoding="utf-8")
+
         versions_dir = app_dir / folder
         versions_dir.mkdir(exist_ok=True)
         version_number = _next_version_number(app_dir, document_type)
@@ -422,6 +464,8 @@ async def tailor_application_documents(
             "success": True,
             "page_count": compiled.get("page_count"),
             "text_chars": compiled.get("text_chars"),
+            "keyword_review": str(target_dir / "keyword-review.json"),
+            "alignment_status": review_report["status"],
         }
         if document_type == "resume":
             manifest["tailor_strategy"] = strategy
