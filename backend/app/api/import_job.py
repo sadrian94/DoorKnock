@@ -1,6 +1,7 @@
 import asyncio
 import ipaddress
 import json
+import re
 import socket
 import uuid
 import zlib
@@ -443,6 +444,48 @@ async def _fetch_ashby_job_description(url: str) -> Optional[str]:
     return None
 
 
+def _workday_job_endpoint(url: str) -> Optional[str]:
+    parsed = urlsplit(url)
+    hostname = (parsed.hostname or "").lower()
+    if not hostname.endswith(".myworkdayjobs.com"):
+        return None
+    tenant = hostname.split(".")[0]
+    parts = [unquote(part) for part in parsed.path.split("/") if part]
+    if parts and re.fullmatch(r"[a-z]{2}-[A-Z]{2}", parts[0]):
+        parts = parts[1:]
+    if len(parts) < 3 or parts[1] != "job":
+        return None
+    if any(part in (".", "..") or "/" in part or "\\" in part for part in parts):
+        return None
+    path = "/".join(quote(part, safe="") for part in parts)
+    return f"{parsed.scheme}://{parsed.netloc}/wday/cxs/{quote(tenant, safe='')}/{path}"
+
+
+async def _fetch_workday_job_description(url: str) -> Optional[str]:
+    endpoint = _workday_job_endpoint(url)
+    if not endpoint:
+        return None
+    try:
+        response = await _fetch_public_page(endpoint, {"Accept": "application/json"})
+    except HTTPException as exc:
+        if exc.detail == "The job page exceeded the response size limit":
+            raise
+        return None
+    if response.status_code != 200:
+        return None
+    try:
+        payload = response.json()
+    except ValueError:
+        return None
+    info = payload.get("jobPostingInfo") if isinstance(payload, dict) else None
+    description = info.get("jobDescription") if isinstance(info, dict) else None
+    if isinstance(description, str):
+        text = _clean_html_text(description)
+        if len(text) >= MIN_JOB_TEXT_LENGTH:
+            return text
+    return None
+
+
 def _extract_ats_description(soup: BeautifulSoup, hostname: str) -> Optional[FetchedJobText]:
     if hostname.endswith(".myworkdayjobs.com") or hostname == "myworkdayjobs.com":
         selectors = (
@@ -515,9 +558,27 @@ async def fetch_url_page(url: str) -> FetchedJobText:
     if ashby_text:
         return FetchedJobText(ashby_text, "Ashby job posting")
 
+    workday_text = await _fetch_workday_job_description(safe_url)
+    if workday_text:
+        return FetchedJobText(workday_text, "Workday job posting")
+
     response = await _fetch_public_page(safe_url, headers)
     if response.status_code != 200:
         raise _fetch_http_error(response.status_code)
+
+    # Workday can return SPA redirect metadata rather than an HTML posting.
+    # Never present that JSON as a successfully extracted job description.
+    hostname = (urlsplit(str(response.url)).hostname or "").lower()
+    if hostname.endswith(".myworkdayjobs.com"):
+        try:
+            page_payload = response.json()
+        except ValueError:
+            page_payload = None
+        if page_payload is not None:
+            raise HTTPException(
+                status_code=400,
+                detail="Workday returned no readable job description. Open the posting in your browser and paste the job description below.",
+            )
 
     soup = BeautifulSoup(response.text, "html.parser")
     page_text = soup.get_text(separator="\n", strip=True)
@@ -534,7 +595,6 @@ async def fetch_url_page(url: str) -> FetchedJobText:
     if structured_description:
         return FetchedJobText(structured_description, "structured job data")
 
-    hostname = (urlsplit(str(response.url)).hostname or "").lower()
     ats_description = _extract_ats_description(soup, hostname)
     if ats_description:
         return ats_description
