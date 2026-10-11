@@ -388,6 +388,19 @@ def resolve_review(message_id: str, action: str, application_id: str | None = No
             changed = app["current_stage"] != to_stage or (
                 to_stage == "closed" and review["event_code"] == "rejected" and app["outcome"] != "rejected"
             )
+            # A receipt confirms submission, not a correction of later progress.
+            # Keep Contacted/interview/terminal state even when the review UI
+            # submits the receipt's proposed Applied stage.
+            receipt_only = review["event_code"] == "application_received" and to_stage == "applied" and app["current_stage"] != "saved"
+            if receipt_only:
+                changed = False
+                conn.execute("""
+                    INSERT INTO timeline_events
+                    (id, application_id, event_type, title, occurred_at, metadata)
+                    VALUES (?, ?, 'acknowledgement', ?, ?, ?)
+                """, (str(uuid.uuid4()), application_id, "Application receipt confirmed from Gmail review",
+                      review["received_at"], json.dumps({"source": "gmail", "message_id": message_id,
+                                                        "event_code": review["event_code"], "reviewed": True})))
             if changed:
                 _change_stage(conn, application_id, app["current_stage"], to_stage,
                               review["event_code"], review["received_at"], message_id, reviewed=True)

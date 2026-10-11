@@ -112,6 +112,37 @@ def test_review_can_be_dismissed_without_stage_change():
         assert conn.execute("SELECT status FROM gmail_review_items WHERE message_id = ?", (mail["id"],)).fetchone()[0] == "dismissed"
 
 
+@pytest.mark.parametrize("stage,outcome", [
+    ("knocked", None), ("assessment", None), ("technical_interview", None),
+    ("offer", None), ("closed", "rejected"), ("applied", None),
+])
+def test_application_confirmation_records_evidence_without_regressing_progress(stage, outcome):
+    app_id = _seed(stage=stage)
+    with get_db() as conn:
+        conn.execute("UPDATE applications SET outcome=?, applied_date='2026-09-01', next_followup_date='2026-10-20' WHERE id=?", (outcome, app_id))
+        before = dict(conn.execute("SELECT current_stage,outcome,applied_date,next_followup_date FROM applications WHERE id=?", (app_id,)).fetchone())
+        conn.commit()
+    mail = _mail("Example Analytics Operations Analyst", "Thank you for applying to the Operations Analyst position at Example Analytics.")
+    assert _record_message(mail)["needs_review"] is True
+    assert resolve_review(mail["id"], "apply", app_id, "applied") == {"stage_changed": False, "status": "apply"}
+    with get_db() as conn:
+        assert dict(conn.execute("SELECT current_stage,outcome,applied_date,next_followup_date FROM applications WHERE id=?", (app_id,)).fetchone()) == before
+        event = conn.execute("SELECT event_type,from_stage,to_stage FROM timeline_events WHERE application_id=?", (app_id,)).fetchone()
+        assert tuple(event) == ("acknowledgement", None, None)
+        assert conn.execute("SELECT stage_applied FROM gmail_application_messages WHERE message_id=?", (mail["id"],)).fetchone()[0] == 0
+    with pytest.raises(ValueError, match="no longer pending"):
+        resolve_review(mail["id"], "apply", app_id, "applied")
+
+
+def test_application_confirmation_still_advances_saved_application():
+    app_id = _seed(stage="saved")
+    mail = _mail("Example Analytics Operations Analyst", "Thank you for applying to the Operations Analyst position at Example Analytics.")
+    assert _record_message(mail)["needs_review"] is True
+    assert resolve_review(mail["id"], "apply", app_id, "applied")["stage_changed"] is True
+    with get_db() as conn:
+        assert conn.execute("SELECT current_stage,applied_date FROM applications WHERE id=?", (app_id,)).fetchone()[0] == "applied"
+
+
 def test_clear_event_without_application_is_queued_for_manual_assignment():
     app_id = _seed(company="Synthetic Bridge", title="Operations Associate")
     mail = _mail("Update from another employer", "We regret to inform you that your application for another position was not selected.")

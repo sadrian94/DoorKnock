@@ -119,7 +119,7 @@ export const SettingsView: React.FC = () => {
         body: JSON.stringify({ action, application_id: choice?.applicationId || null, to_stage: choice?.stage || null }),
       }));
       await refreshGmail();
-      setGmailMessage(action === 'dismiss' ? 'Review dismissed. No stage was changed.' : result.stage_changed ? 'Stage updated and recorded in the application timeline.' : 'Review saved. The application was already at that stage.');
+      setGmailMessage(action === 'dismiss' ? 'Review dismissed. No stage was changed.' : result.stage_changed ? 'Stage updated and recorded in the application timeline.' : 'Review saved. Current application stage preserved.');
     } catch (error) {
       setGmailMessage(error instanceof Error ? error.message : 'Could not save review');
     } finally { setReviewBusy(''); }
