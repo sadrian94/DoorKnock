@@ -353,17 +353,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                               </div>
                             </div>
 
-                            {/* Quick Action: Advance Stage Selector */}
-                            <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between">
-                              <button
-                                onClick={() => onSelectJob(card.job_id)}
-                                className="text-[11px] text-slate-400 hover:text-amber-300 transition"
-                              >
-                                Detail
-                              </button>
-
-                              <button onClick={() => onSelectJob(card.job_id)} className="text-xs text-amber-300">Update progress</button>
-                            </div>
                           </div>
                         );
                       })
