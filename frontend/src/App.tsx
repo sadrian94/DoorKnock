@@ -185,6 +185,7 @@ export const App: React.FC = () => {
             hasError={dashboardError}
             onRetry={fetchDashboard}
             onSelectJob={handleSelectJob}
+            onApplicationsChanged={async () => { await Promise.all([fetchDashboard(), fetchKanban(), fetchSavedJobs()]); }}
           />
         ) : currentTab === 'saved' ? (
           <SavedJobsView

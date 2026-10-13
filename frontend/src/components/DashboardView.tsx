@@ -3,6 +3,7 @@ import { ArrowUpRight, CalendarClock, RefreshCw } from 'lucide-react';
 import type { DashboardSummary } from '../types';
 import { useTimeSettings } from '../timeSettings';
 import { formatDate } from '../time';
+import { NextActionPanel } from './NextActionPanel';
 
 interface DashboardViewProps {
   data: DashboardSummary | null;
@@ -10,6 +11,7 @@ interface DashboardViewProps {
   hasError: boolean;
   onRetry: () => void;
   onSelectJob: (jobId: string) => void;
+  onApplicationsChanged: () => Promise<void>;
 }
 
 const STAGE_LABELS: Record<string, string> = {
@@ -26,7 +28,7 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
-  data, isLoading, hasError, onRetry, onSelectJob,
+  data, isLoading, hasError, onRetry, onSelectJob, onApplicationsChanged,
 }) => {
   const { settings } = useTimeSettings();
   const displayDate = (value: string) => formatDate(value, settings.timezone, { month: 'short', day: 'numeric' });
@@ -136,7 +138,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         ) : (
           <div className="mt-4 divide-y divide-slate-800">
             {(showAllAttention ? data.attention_items : data.attention_items.slice(0, 8)).map((item) => (
-              <button key={item.application_id} onClick={() => onSelectJob(item.job_id)}
+              <div key={item.application_id}><button onClick={() => onSelectJob(item.job_id)}
                 className="flex w-full items-center justify-between gap-4 py-3 text-left hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500">
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-slate-200">{item.title}</span>
@@ -152,6 +154,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <ArrowUpRight className="h-4 w-4" />
                 </span>
               </button>
+              <NextActionPanel key={`${item.application_id}:${item.kind}:${item.date}`} compact action={item} currentStage={item.current_stage || 'applied'} onRecorded={onApplicationsChanged} />
+              </div>
             ))}
           </div>
         )}

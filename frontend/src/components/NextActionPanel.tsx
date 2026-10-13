@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { NextAction } from '../types';
+import { defaultProgressEvent } from '../progressDefaults';
 import { formatDate } from '../time';
 import { useTimeSettings } from '../timeSettings';
 
@@ -22,10 +23,16 @@ function localInputNow() {
 const ROUNDS = [['recruiter_screen', 'Recruiter screen'], ['team_match', 'Team interview'], ['technical_interview', 'Technical interview'], ['final_round', 'Final round']];
 const STAGES = [['saved','Saved'], ['applied','Applied'], ['knocked','Contacted'], ['assessment','Assessment'], ...ROUNDS, ['offer','Offer'], ['closed','Closed']];
 
-export function NextActionPanel({ action, currentStage, onRecorded }: { action: NextAction; currentStage: string; onRecorded: () => void | Promise<void> }) {
+const DIRECT_ACTIONS = ['followup', 'status_check', 'thank_you', 'assessment', 'interview_review'];
+
+export function NextActionPanel({ action, currentStage, onRecorded, compact = false }: { action: NextAction; currentStage: string; onRecorded: () => void | Promise<void>; compact?: boolean }) {
   const { settings } = useTimeSettings();
   const [open, setOpen] = useState(false);
-  const [event, setEvent] = useState(action.kind === 'assessment' ? 'assessment_submitted' : action.kind === 'interview_review' ? 'interview_completed' : 'message_received');
+  const suggestedEvent = defaultProgressEvent(currentStage, action.kind);
+  const shortcut = (currentStage === 'saved' || (DIRECT_ACTIONS.includes(action.kind) && !['closed', 'offer'].includes(currentStage)))
+    ? EVENTS.find(([eventType]) => eventType === suggestedEvent) : undefined;
+  const [event, setEvent] = useState(suggestedEvent);
+  const [quick, setQuick] = useState(false);
   const [occurred, setOccurred] = useState(localInputNow);
   const [deadline, setDeadline] = useState('');
   const [expected, setExpected] = useState('');
@@ -40,6 +47,13 @@ export function NextActionPanel({ action, currentStage, onRecorded }: { action: 
   const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const displayDate = (value: string) => formatDate(value, settings.timezone, { month: 'short', day: 'numeric', year: 'numeric' });
 
+  function start(eventType: string, isQuick: boolean) {
+    setEvent(eventType); setQuick(isQuick); setOpen(true);
+    setOccurred(localInputNow()); setDeadline(''); setExpected(''); setError('');
+    setRound(ROUNDS.some(([key]) => key === currentStage) ? currentStage : '');
+    setStage(currentStage); setOutcome('');
+  }
+
   async function record() {
     setBusy(true);
     setError('');
@@ -51,7 +65,14 @@ export function NextActionPanel({ action, currentStage, onRecorded }: { action: 
       if (hasExpected && expected) payload.expected_response_date = expected;
       if (event === 'outreach_sent') payload.contact_scope = scope;
       if (event === 'application_submitted' && expected) payload.review_after = expected;
-      const response = await fetch(`/api/pipeline/applications/${encodeURIComponent(action.application_id)}/cadence`, {
+      let applicationId = action.application_id;
+      if (!applicationId) {
+        const started = await fetch(`/api/jobs/${encodeURIComponent(action.job_id)}/start-application`, { method: 'POST' });
+        const application = await started.json();
+        if (!started.ok || !application.id) throw new Error(typeof application.detail === 'string' ? application.detail : 'Could not create the application record.');
+        applicationId = application.id;
+      }
+      const response = await fetch(`/api/pipeline/applications/${encodeURIComponent(applicationId)}/cadence`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const result = await response.json();
@@ -66,9 +87,9 @@ export function NextActionPanel({ action, currentStage, onRecorded }: { action: 
   }
 
   return (
-    <section className="mx-6 my-3 rounded-xl border border-slate-700 bg-slate-900 p-4" aria-label="Next action">
+    <section className={compact ? "py-3" : "mx-6 my-3 rounded-xl border border-slate-700 bg-slate-900 p-4"} aria-label="Next action">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        {!compact && <div>
           <p className="text-sm font-semibold text-amber-300">{action.label}
             {action.date && <span className="ml-2 text-slate-300">{displayDate(action.date)}</span>}
             {action.state === 'waiting' && <span className="ml-2 text-xs text-slate-500">Waiting for response</span>}
@@ -76,16 +97,28 @@ export function NextActionPanel({ action, currentStage, onRecorded }: { action: 
           {action.due_date && <p className="mt-1 text-xs text-slate-300">{action.kind === 'interview' ? 'Interview' : 'Deadline'}: {displayDate(action.due_date)}</p>}
           <p className="mt-1 text-xs text-slate-400">{action.reason}</p>
           <details className="mt-1 text-[11px] text-slate-500"><summary className="cursor-pointer">Why this date?</summary><p>Based on: {action.basis || 'Current stage'} · {action.followup_count}/2 status follow-ups · dates use weekdays (Mon–Fri)</p></details>
-        </div>
-        <button onClick={() => setOpen(!open)} className="rounded-lg border border-slate-600 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800">
+        </div>}
+        <div className="flex flex-wrap gap-2">
+        {shortcut && <button disabled={busy} onClick={() => start(shortcut[0], true)} className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white">{shortcut[1]}</button>}
+        {action.state !== 'closed' && <button disabled={busy} onClick={() => start(action.state === 'paused' ? 'cadence_resumed' : 'reminder_set', true)} className="rounded-lg border border-slate-600 px-3 py-2 text-xs text-slate-200">{action.state === 'paused' ? 'Resume' : 'Later'}</button>}
+        <button disabled={busy} onClick={() => open ? setOpen(false) : start(suggestedEvent, false)} className="rounded-lg border border-slate-600 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800">
           {open ? 'Cancel' : 'Update progress'}
         </button>
+        </div>
       </div>
+      {!compact && !!action.upcoming_actions?.length && <div className="mt-3 border-t border-slate-700 pt-3">
+        <p className="text-xs font-semibold text-slate-300">Coming next · tentative</p>
+        <ul className="mt-2 space-y-2">{action.upcoming_actions.map((planned, index) => <li key={index} className="text-xs text-slate-400">
+          <span className="text-slate-300">{planned.label} · {planned.date ? displayDate(planned.date) : 'Date pending confirmation'}</span>
+          <p className="mt-1">{planned.condition}</p>
+        </li>)}</ul>
+      </div>}
       {open && <form onSubmit={(e) => { e.preventDefault(); void record(); }} className="mt-4 space-y-3 border-t border-slate-700 pt-4">
-        <p className="text-xs text-slate-400">Choose what happened. Saving updates your stage, timeline and next action together.</p>
+        <p className="text-xs text-slate-400">{quick ? 'Confirm what actually happened and its date before saving.' : 'Choose what happened. Saving updates your stage, timeline and next action together.'}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs text-slate-300">What happened?
-            <select value={event} onChange={(e) => { setEvent(e.target.value); setDeadline(''); setExpected(''); }} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2">
+            <select required value={event} onChange={(e) => { setEvent(e.target.value); setDeadline(''); setExpected(''); }} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2">
+              <option value="">Choose what happened</option>
               <optgroup label="Progress">{EVENTS.filter(([value]) => !['reminder_set', 'cadence_paused', 'cadence_resumed', 'acknowledgement', 'stage_updated'].includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</optgroup>
               <optgroup label="More options">{EVENTS.filter(([value]) => ['reminder_set', 'cadence_paused', 'cadence_resumed', 'acknowledgement', 'stage_updated'].includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</optgroup>
             </select>
@@ -111,7 +144,7 @@ export function NextActionPanel({ action, currentStage, onRecorded }: { action: 
             </select>
           </label>}
         </div>
-        <details className="text-xs text-slate-400"><summary className="cursor-pointer">Event date (defaults to now)</summary>          <label className="text-xs text-slate-300">Event time ({browserZone})
+        <details open={quick} className="text-xs text-slate-400"><summary className="cursor-pointer">Event date (defaults to now)</summary>          <label className="text-xs text-slate-300">Event time ({browserZone})
             <input required type="datetime-local" value={occurred} onChange={(e) => setOccurred(e.target.value)} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2" />
           </label>
         </details>

@@ -132,12 +132,13 @@ def correct_timeline_event(application_id, event_id, restore=False):
         return {'event_id': event_id, 'message': message}
 
 def next_action(application: dict, events: list[dict], messages: list[dict],
-                contact_available: bool, today: date | None = None) -> dict:
+                contact_available: bool, today: date | None = None, *, include_preview=True) -> dict:
     today = today or local_today()
     result = {key: application.get(key) for key in ('job_id', 'company', 'title')}
     result.update(application_id=application['id'], kind='record_review',
                   label=LABELS['record_review'], date=None, due_date=None,
-                  state='due', reason='', basis='', meaningful_date=None, followup_count=0)
+                  state='due', reason='', basis='', meaningful_date=None, followup_count=0,
+                  current_stage=application['current_stage'], upcoming_actions=[])
 
     def finish(kind, when=None, reason='', basis='', due=None):
         result.update(kind=kind, label=LABELS[kind],
@@ -146,6 +147,32 @@ def next_action(application: dict, events: list[dict], messages: list[dict],
                       reason=reason, basis=basis)
         result['state'] = ('paused' if kind == 'paused' else 'closed' if kind == 'closed'
                            else 'waiting' if when and when > today else 'due')
+        if include_preview:
+            def preview(action_kind, action_date, condition):
+                result['upcoming_actions'].append(dict(kind=action_kind, label=LABELS[action_kind],
+                                                       date=action_date, condition=condition))
+            if kind == 'thank_you':
+                # Project the existing scheduler without persisting a hypothetical event.
+                projected = next_action(application, [*events, dict(event_type='thank_you_sent',
+                    occurred_at=anchor.isoformat())], messages, contact_available, today, include_preview=False)
+                if projected['kind'] in ('followup', 'status_check'):
+                    preview(projected['kind'], projected['date'], 'After the thank-you is recorded, if no substantive reply arrives.')
+            elif kind in ('interview', 'interview_review'):
+                preview('thank_you', None, 'After interview completion is confirmed; send within 24-48 hours.')
+                preview('followup', None, 'After completion: employer response date +2 weekdays, otherwise interview +7 weekdays.')
+            elif kind == 'assessment':
+                preview('followup', None, 'After submission is confirmed: employer response date +2 weekdays, otherwise submission +7 weekdays.')
+            elif kind == 'followup':
+                if result['followup_count'] < 1:
+                    preview('followup', None, 'If this follow-up is sent and remains unanswered: 7 weekdays after sending.')
+                else:
+                    preview('paused', None, 'If a second status follow-up is sent and remains unanswered; stage stays unchanged.')
+            elif (kind == 'status_check' and result['followup_count'] == 0 and when
+                  and when < anchor + timedelta(days=30)
+                  and not any(e['event_type'] == 'status_checked' and
+                              (event_day(e.get('occurred_at')) or date.min) >= anchor for e in events)):
+                preview('status_check', (anchor + timedelta(days=30)).isoformat(),
+                        'After the initial portal check is recorded, if there is no new progress.')
         return result
 
     stage = application['current_stage']

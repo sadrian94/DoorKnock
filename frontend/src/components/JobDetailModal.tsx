@@ -803,7 +803,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-1">
-          {(activeTab === 'jd' || activeTab === 'timeline') && activeJob?.next_action && <NextActionPanel key={activeJob.id} action={activeJob.next_action} currentStage={activeJob.application?.current_stage || 'saved'} onRecorded={async () => {
+          {(activeTab === 'jd' || activeTab === 'timeline') && activeJob && <NextActionPanel key={activeJob.id} action={activeJob.next_action || {
+            application_id: activeJob.application?.id || '', job_id: activeJob.id,
+            title: activeJob.title, company: activeJob.company, kind: 'closed',
+            label: 'Record application progress', date: null, due_date: null, state: 'closed',
+            reason: 'Confirm a real event to update your application history.', basis: 'Saved job', followup_count: 0,
+          }} currentStage={activeJob.application?.current_stage || 'saved'} onRecorded={async () => {
             const response = await fetch(`/api/jobs/${activeJob.id}`);
             if (!response.ok) throw new Error('Event saved. Refresh the job to load the updated timeline.');
             const updated: Job = await response.json();

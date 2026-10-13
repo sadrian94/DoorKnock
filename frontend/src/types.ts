@@ -70,7 +70,16 @@ export interface TimelineEvent {
   occurred_at: string;
 }
 
+export interface PlannedAction {
+  kind: NextAction['kind'];
+  label: string;
+  date: string | null;
+  condition: string;
+}
+
 export interface NextAction {
+  current_stage?: string;
+  upcoming_actions?: PlannedAction[];
   application_id: string;
   job_id: string;
   title: string;

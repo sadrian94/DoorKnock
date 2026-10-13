@@ -75,6 +75,27 @@ Explicit `stage_updated` requires `to_stage`; closing also requires a confirmed
 records require an explicit stage change to reopen. Pausing or changing reminders
 only affects reminders. No Gmail mutation or email subject/body/sender intake.
 
+Dashboard action rows offer context-specific confirmation shortcuts and Later.
+The same shortcuts appear in job details. Opening a shortcut preselects the event
+and shows its actual event time; opening or cancelling never records progress.
+Update progress remains available for other events. Saving refreshes the actions.
+Event suggestions use the explicit next action first, then the current stage.
+Saved suggests Application submitted; Record review suggests the submission,
+outreach or scheduled interview/assessment event needed to confirm its evidence.
+Paused suggests Resume reminders; Offer/Closed suggests an explicit stage update
+without guessing an outcome. Unrecognized contexts require choosing an event.
+Saved jobs without an application record create it only when saving confirmed
+progress, using the existing start-application endpoint; opening/cancelling is
+read-only. If recording fails after creation, the record stays Saved and retry
+reuses it rather than creating another application.
+
+Job details also show Coming next as a tentative preview. Interview completion
+and assessment submission must be confirmed before their follow-up dates become
+active. After a completed interview, the status follow-up date is previewed while
+the thank-you is outstanding. Previews use the same scheduler, create no events,
+and are excluded from Dashboard action counts. Replies, pauses and corrections
+recompute the preview with the active action.
+
 Supported events: `application_submitted`, `outreach_sent`, `follow_up`,
 `message_received` (substantive reply), `acknowledgement`, `interview_scheduled`,
 `interview_completed`, `thank_you_sent`, `assessment_assigned`,

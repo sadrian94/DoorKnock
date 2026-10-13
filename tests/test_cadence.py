@@ -371,3 +371,81 @@ def test_new_progress_after_legacy_stage_can_be_undone(client):
     event_id = latest_event_id(client)
     assert delete_event(client, event_id).status_code == 200
     assert client.get('/api/jobs/job').json()['application']['current_stage'] == 'knocked'
+
+
+def test_thank_you_previews_status_followup_without_recording_it(client):
+    record(client, 'interview_completed', interview_stage='recruiter_screen', expected_response_date='2026-10-09')
+    action = schedule(client)
+    assert action['kind'] == 'thank_you'
+    assert action['upcoming_actions'][0]['kind'] == 'followup'
+    assert action['upcoming_actions'][0]['date'] == '2026-10-13'
+    with get_db() as conn:
+        assert conn.execute("SELECT count(*) FROM timeline_events WHERE event_type='thank_you_sent'").fetchone()[0] == 0
+    record(client, 'thank_you_sent')
+    assert schedule(client)['kind'] == 'followup'
+    record(client, 'cadence_paused')
+    assert schedule(client)['upcoming_actions'] == []
+
+
+def test_scheduled_interview_preview_waits_for_confirmed_completion(client):
+    record(client, 'interview_scheduled', due_date='2026-10-06')
+    action = schedule(client)
+    assert action['current_stage'] == 'recruiter_screen'
+    assert action['upcoming_actions'][0]['kind'] == 'thank_you'
+    assert action['upcoming_actions'][0]['date'] is None
+    assert action['upcoming_actions'][0]['condition']
+
+
+def test_status_check_preview_uses_thirty_day_review_and_clears_when_paused(client):
+    action = schedule(client)
+    assert action['upcoming_actions'][0]['date'] == '2026-10-25'
+    record(client, 'status_checked')
+    assert schedule(client)['date'] == '2026-10-25'
+    assert schedule(client)['upcoming_actions'] == []
+
+
+def test_followup_preview_reflects_allowance_and_reply_resets_it(client):
+    record(client, 'outreach_sent', '2026-09-01T15:00:00Z', contact_scope='warm')
+    assert schedule(client)['upcoming_actions'][0]['kind'] == 'followup'
+    assert schedule(client)['upcoming_actions'][0]['date'] is None
+    record(client, 'follow_up', '2026-09-10T15:00:00Z')
+    assert schedule(client)['upcoming_actions'][0]['kind'] == 'paused'
+    record(client, 'message_received')
+    assert schedule(client)['upcoming_actions'][0]['kind'] == 'followup'
+    record(client, 'stage_updated', to_stage='closed', outcome='rejected')
+    assert schedule(client)['upcoming_actions'] == []
+
+
+def test_thank_you_preview_respects_manual_date_and_stays_out_of_attention(client):
+    record(client, 'interview_completed', interview_stage='recruiter_screen')
+    record(client, 'reminder_set', action_date='2026-10-20')
+    action = schedule(client)
+    assert action['upcoming_actions'][0]['date'] == '2026-10-20'
+    items = client.get('/api/pipeline/dashboard').json()['attention_items']
+    assert len(items) == 1
+    assert items[0]['kind'] == 'thank_you'
+    record(client, 'thank_you_sent')
+    assert schedule(client)['date'] == '2026-10-20'
+
+
+def test_saved_job_submission_flow_reuses_record_and_preserves_actual_date(client):
+    with get_db() as conn:
+        conn.execute("DELETE FROM applications WHERE id='application'")
+        conn.commit()
+    assert client.get('/api/jobs/job').json()['application'] is None
+    started = client.post('/api/jobs/job/start-application').json()
+    assert started['current_stage'] == 'saved'
+    assert started['applied_date'] is None
+    retried = client.post('/api/jobs/job/start-application').json()
+    assert retried['id'] == started['id']
+    response = client.post(f"/api/pipeline/applications/{started['id']}/cadence", json={
+        'event_type': 'application_submitted', 'occurred_at': '2026-09-25T14:00:00Z',
+    })
+    assert response.status_code == 200
+    job = client.get('/api/jobs/job').json()
+    assert job['application']['current_stage'] == 'applied'
+    assert job['application']['applied_date'] == '2026-09-25'
+    assert job['next_action']['date'] == '2026-10-09'
+    assert len(job['timeline']) == 1
+    with get_db() as conn:
+        assert conn.execute('SELECT count(*) FROM applications').fetchone()[0] == 1
