@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { NextAction } from '../types';
 import { defaultProgressEvent } from '../progressDefaults';
-import { formatDate } from '../time';
+import { defaultReminderDate, formatDate } from '../time';
 import { useTimeSettings } from '../timeSettings';
 
 const EVENTS = [
@@ -49,7 +49,9 @@ export function NextActionPanel({ action, currentStage, onRecorded, compact = fa
 
   function start(eventType: string, isQuick: boolean) {
     setEvent(eventType); setQuick(isQuick); setOpen(true);
-    setOccurred(localInputNow()); setDeadline(''); setExpected(''); setError('');
+    setOccurred(localInputNow());
+    setDeadline(eventType === 'reminder_set' ? defaultReminderDate(settings.timezone) : '');
+    setExpected(''); setError('');
     setRound(ROUNDS.some(([key]) => key === currentStage) ? currentStage : '');
     setStage(currentStage); setOutcome('');
   }
@@ -117,7 +119,7 @@ export function NextActionPanel({ action, currentStage, onRecorded, compact = fa
         <p className="text-xs text-slate-400">{quick ? 'Confirm what actually happened and its date before saving.' : 'Choose what happened. Saving updates your stage, timeline and next action together.'}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs text-slate-300">What happened?
-            <select required value={event} onChange={(e) => { setEvent(e.target.value); setDeadline(''); setExpected(''); }} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2">
+            <select required value={event} onChange={(e) => { setEvent(e.target.value); setDeadline(e.target.value === 'reminder_set' ? defaultReminderDate(settings.timezone) : ''); setExpected(''); }} className="mt-1 block w-full rounded border border-slate-600 bg-slate-950 p-2">
               <option value="">Choose what happened</option>
               <optgroup label="Progress">{EVENTS.filter(([value]) => !['reminder_set', 'cadence_paused', 'cadence_resumed', 'acknowledgement', 'stage_updated'].includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</optgroup>
               <optgroup label="More options">{EVENTS.filter(([value]) => ['reminder_set', 'cadence_paused', 'cadence_resumed', 'acknowledgement', 'stage_updated'].includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</optgroup>

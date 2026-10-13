@@ -31,3 +31,17 @@ test('paused and terminal records do not suggest new contact or infer an outcome
   assert.equal(defaultProgressEvent('offer', 'closed'), 'stage_updated');
   assert.equal(defaultProgressEvent('unknown', 'record_review'), '');
 });
+
+const timeSource = readFileSync(new URL('./time.ts', import.meta.url), 'utf8');
+const timeCompiled = ts.transpileModule(timeSource, {compilerOptions: {module: ts.ModuleKind.ESNext}}).outputText;
+const { defaultReminderDate } = await import(`data:text/javascript;base64,${Buffer.from(timeCompiled).toString('base64')}`);
+
+test('Later uses seven calendar days after today in the selected time zone', () => {
+  const now = new Date('2026-10-14T02:00:00Z');
+  assert.equal(defaultReminderDate('America/Chicago', now), '2026-10-20');
+  assert.equal(defaultReminderDate('Asia/Hong_Kong', now), '2026-10-21');
+});
+test('Later handles month boundaries and daylight saving without shifting the date', () => {
+  assert.equal(defaultReminderDate('America/Chicago', new Date('2026-10-29T12:00:00Z')), '2026-11-05');
+  assert.equal(defaultReminderDate('America/Chicago', new Date('2026-12-29T12:00:00Z')), '2027-01-05');
+});

@@ -56,4 +56,11 @@ export function daysAgo(value: string | undefined, timeZone: string, now = new D
   return diff <= 0 ? 'Today' : `${diff}d ago`;
 }
 
+export function defaultReminderDate(timeZone: string, now = new Date()): string {
+  const today = calendarDay(now.toISOString(), timeZone)!;
+  const date = new Date(`${today}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 7);
+  return date.toISOString().slice(0, 10);
+}
+
 export const hasUnknownTimeZone = (value: string): boolean => NAIVE_ISO.test(value);
