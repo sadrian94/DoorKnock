@@ -449,3 +449,161 @@ def test_saved_job_submission_flow_reuses_record_and_preserves_actual_date(clien
     assert len(job['timeline']) == 1
     with get_db() as conn:
         assert conn.execute('SELECT count(*) FROM applications').fetchone()[0] == 1
+
+
+def test_later_counts_only_saved_postponements_without_closing(client):
+    record(client, 'reminder_set', '2026-10-01T10:00:00Z', action_date='2026-10-08')
+    assert schedule(client)['postponement_count'] == 0
+    first = record(client, 'reminder_set', '2026-10-01T11:00:00Z', action_date='2026-10-08', reminder_source='later')
+    assert first['postponement_count'] == 1
+    record(client, 'reminder_set', '2026-10-01T11:00:00Z', action_date='2026-10-08', reminder_source='later')
+    assert schedule(client)['postponement_count'] == 1
+    second = record(client, 'reminder_set', '2026-10-01T12:00:00Z', action_date='2026-10-15', reminder_source='later')
+    assert second['postponement_count'] == 2
+    assert second['date'] == '2026-10-15'
+    with get_db() as conn:
+        assert conn.execute('SELECT current_stage,outcome FROM applications').fetchone()[:] == ('applied', None)
+    record(client, 'acknowledgement')
+    assert schedule(client)['postponement_count'] == 2
+    record(client, 'message_received')
+    assert schedule(client)['postponement_count'] == 0
+
+
+def test_deleted_later_is_excluded_and_restoring_recounts(client):
+    record(client, 'reminder_set', action_date='2026-10-08', reminder_source='later')
+    with get_db() as conn:
+        event_id = conn.execute("SELECT id FROM timeline_events WHERE event_type='reminder_set'").fetchone()[0]
+    url = f'/api/pipeline/applications/application/timeline/{event_id}'
+    assert client.delete(url).status_code == 200
+    assert schedule(client)['postponement_count'] == 0
+    assert client.post(url + '/restore').status_code == 200
+    assert schedule(client)['postponement_count'] == 1
+
+
+@pytest.mark.parametrize('event,fields', [
+    ('status_checked', {}), ('interview_scheduled', {'due_date':'2026-10-06'}),
+    ('assessment_assigned', {'due_date':'2026-10-06'}),
+])
+def test_actual_progress_resets_later_count(client, event, fields):
+    record(client, 'reminder_set', '2026-10-01T10:00:00Z', action_date='2026-10-08', reminder_source='later')
+    record(client, event, **fields)
+    assert schedule(client)['postponement_count'] == 0
+
+
+def test_later_source_cannot_tag_an_unrelated_event(client):
+    response = client.post('/api/pipeline/applications/application/cadence', json={
+        'event_type':'acknowledgement', 'reminder_source':'later',
+    })
+    assert response.status_code == 400
+    with get_db() as conn:
+        assert conn.execute('SELECT count(*) FROM timeline_events').fetchone()[0] == 0
+
+
+def test_pause_after_postponed_interview_stops_reminders_without_changing_stage(client):
+    record(client, 'interview_scheduled', '2026-10-01T09:00:00Z', due_date='2026-10-06')
+    record(client, 'reminder_set', '2026-10-01T10:00:00Z', action_date='2026-10-08', reminder_source='later')
+    record(client, 'reminder_set', '2026-10-01T11:00:00Z', action_date='2026-10-15', reminder_source='later')
+    record(client, 'cadence_paused')
+    assert schedule(client)['state'] == 'paused'
+    with get_db() as conn:
+        assert conn.execute('SELECT current_stage,outcome FROM applications').fetchone()[:] == ('recruiter_screen', None)
+
+
+def test_status_review_requires_thirty_days_and_two_confirmed_checks(client):
+    with get_db() as conn:
+        conn.execute("UPDATE applications SET applied_date='2026-09-01'")
+        conn.commit()
+    record(client, 'status_checked', '2026-09-16T14:00:00Z')
+    assert schedule(client)['status_check_count'] == 1
+    assert schedule(client)['status_review_required'] is False
+    result = record(client, 'status_checked', '2026-10-01T14:00:00Z')
+    assert result['status_check_count'] == 2
+    assert result['days_without_progress'] == 30
+    assert result['status_review_required'] is True
+    assert result['state'] == 'paused'
+    with get_db() as conn:
+        assert conn.execute('SELECT current_stage,outcome FROM applications').fetchone()[:] == ('applied', None)
+    record(client, 'message_received', '2026-10-01T14:01:00Z')
+    assert schedule(client)['status_check_count'] == 0
+    assert schedule(client)['status_review_required'] is False
+
+
+def test_multiple_recent_checks_do_not_imply_ghosting(client):
+    record(client, 'status_checked', '2026-10-01T10:00:00Z')
+    record(client, 'status_checked', '2026-10-01T11:00:00Z')
+    assert schedule(client)['status_check_count'] == 2
+    assert schedule(client)['status_review_required'] is False
+
+
+def test_status_review_respects_promised_response_and_explicit_pause(client):
+    record(client, 'message_received', '2026-08-31T14:00:00Z', expected_response_date='2026-10-09')
+    record(client, 'status_checked', '2026-09-16T14:00:00Z')
+    record(client, 'status_checked', '2026-10-01T14:00:00Z')
+    assert schedule(client)['status_review_required'] is False
+    record(client, 'cadence_paused')
+    assert schedule(client)['status_review_required'] is False
+
+
+def test_status_review_can_resume_waiting_without_repeating_prompt_immediately(client):
+    with get_db() as conn:
+        conn.execute("UPDATE applications SET applied_date='2026-09-01'")
+        conn.commit()
+    record(client, 'status_checked', '2026-09-16T14:00:00Z')
+    record(client, 'status_checked', '2026-10-01T12:00:00Z')
+    assert schedule(client)['status_review_required'] is True
+    resumed = record(client, 'cadence_resumed', action_date='2026-10-08')
+    assert resumed['status_review_required'] is False
+    assert resumed['kind'] == 'status_check'
+    assert resumed['date'] == '2026-10-08'
+    assert resumed['status_check_count'] == 2
+
+
+def test_deleted_status_check_is_excluded_from_review(client):
+    with get_db() as conn:
+        conn.execute("UPDATE applications SET applied_date='2026-09-01'")
+        conn.commit()
+    record(client, 'status_checked', '2026-09-16T14:00:00Z')
+    record(client, 'status_checked', '2026-10-01T12:00:00Z')
+    with get_db() as conn:
+        event_id = conn.execute("SELECT id FROM timeline_events WHERE occurred_at='2026-10-01T12:00:00+00:00'").fetchone()[0]
+    url = f'/api/pipeline/applications/application/timeline/{event_id}'
+    assert client.delete(url).status_code == 200
+    assert schedule(client)['status_check_count'] == 1
+    assert schedule(client)['status_review_required'] is False
+    assert client.post(url + '/restore').status_code == 200
+    assert schedule(client)['status_review_required'] is True
+
+
+def test_next_actions_sort_by_date_before_action_priority(client):
+    with get_db() as conn:
+        conn.execute("INSERT INTO jobs (id,title,company) VALUES ('interview-job','Analyst','Example')")
+        conn.execute("INSERT INTO applications (id,job_id,current_stage,applied_date) VALUES ('interview-app','interview-job','applied','2026-09-25')")
+        conn.execute("INSERT INTO jobs (id,title,company) VALUES ('undated-job','Analyst','Example')")
+        conn.execute("INSERT INTO applications (id,job_id,current_stage) VALUES ('undated-app','undated-job','applied')")
+        conn.commit()
+    record(client, 'reminder_set', action_date='2026-10-02')
+    response = client.post('/api/pipeline/applications/interview-app/cadence', json={
+        'event_type':'interview_scheduled', 'due_date':'2026-10-15', 'interview_stage':'recruiter_screen',
+    })
+    assert response.status_code == 200
+    items = client.get('/api/pipeline/dashboard').json()['attention_items']
+    assert [(item['application_id'], item['date']) for item in items] == [
+        ('application', '2026-10-02'), ('interview-app', '2026-10-13'), ('undated-app', None),
+    ]
+
+
+def test_next_actions_use_action_priority_when_dates_match(client):
+    with get_db() as conn:
+        for job_id, application_id in [('interview-job','interview-app'), ('contact-job','contact-app')]:
+            conn.execute("INSERT INTO jobs (id,title,company) VALUES (?, 'Analyst','Example')", (job_id,))
+            conn.execute("INSERT INTO applications (id,job_id,current_stage,applied_date) VALUES (?,?,'applied','2026-09-25')", (application_id,job_id))
+        conn.commit()
+    record(client, 'reminder_set', action_date='2026-10-02')
+    for application_id, payload in [
+        ('interview-app', {'event_type':'interview_scheduled','due_date':'2026-10-06','interview_stage':'recruiter_screen'}),
+        ('contact-app', {'event_type':'outreach_sent','occurred_at':'2026-09-25T14:00:00Z','contact_scope':'warm'}),
+    ]:
+        assert client.post(f'/api/pipeline/applications/{application_id}/cadence', json=payload).status_code == 200
+    items = client.get('/api/pipeline/dashboard').json()['attention_items']
+    assert [item['date'] for item in items] == ['2026-10-02'] * 3
+    assert [item['kind'] for item in items] == ['interview', 'followup', 'status_check']

@@ -76,6 +76,7 @@ class CadenceEventRequest(BaseModel):
     due_date: Optional[date] = None
     expected_response_date: Optional[date] = None
     action_date: Optional[date] = None
+    reminder_source: Optional[Literal['later']] = None
     review_after: Optional[date] = None
     contact_scope: Literal['cold', 'warm'] = 'cold'
     interview_stage: Optional[Literal['recruiter_screen', 'team_match', 'technical_interview', 'final_round']] = None

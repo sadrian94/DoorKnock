@@ -154,7 +154,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <ArrowUpRight className="h-4 w-4" />
                 </span>
               </button>
-              <NextActionPanel key={`${item.application_id}:${item.kind}:${item.date}`} compact action={item} currentStage={item.current_stage || 'applied'} onRecorded={onApplicationsChanged} />
+              <NextActionPanel key={item.application_id} compact action={item} currentStage={item.current_stage || 'applied'} onRecorded={onApplicationsChanged} />
               </div>
             ))}
           </div>

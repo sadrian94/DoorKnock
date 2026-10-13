@@ -45,6 +45,6 @@ def test_dashboard_counts_full_population_and_deduplicates_attention(tmp_path, m
     assert len(data["weekly_applications"]) == 12
     assert sum(week["count"] for week in data["weekly_applications"]) == 1
     assert [(item["application_id"], item["kind"]) for item in data["attention_items"]] == [
-        ("screen-app", "record_review"),
         ("applied-app", "status_check"),
+        ("screen-app", "record_review"),
     ]

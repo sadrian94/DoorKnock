@@ -139,6 +139,19 @@ def next_action(application: dict, events: list[dict], messages: list[dict],
                   label=LABELS['record_review'], date=None, due_date=None,
                   state='due', reason='', basis='', meaningful_date=None, followup_count=0,
                   current_stage=application['current_stage'], upcoming_actions=[])
+    result['postponement_count'] = 0
+    result.update(status_check_count=0, days_without_progress=0, status_review_required=False)
+    progress_events = {'application_submitted', 'message_received', 'interview_scheduled',
+                       'interview_completed', 'assessment_assigned', 'assessment_submitted',
+                       'follow_up', 'thank_you_sent', 'status_checked'}
+    for event in events:
+        if not visible_event(event):
+            continue
+        if (event['event_type'] in progress_events or
+            (event['event_type'] == 'stage_change' and event.get('from_stage') != event.get('to_stage'))):
+            result['postponement_count'] = 0
+        elif event['event_type'] == 'reminder_set' and _metadata(event).get('reminder_source') == 'later':
+            result['postponement_count'] += 1
 
     def finish(kind, when=None, reason='', basis='', due=None):
         result.update(kind=kind, label=LABELS[kind],
@@ -147,6 +160,7 @@ def next_action(application: dict, events: list[dict], messages: list[dict],
                       reason=reason, basis=basis)
         result['state'] = ('paused' if kind == 'paused' else 'closed' if kind == 'closed'
                            else 'waiting' if when and when > today else 'due')
+        result['status_review_required'] = result['status_review_required'] and kind in ('followup', 'status_check', 'paused')
         if include_preview:
             def preview(action_kind, action_date, condition):
                 result['upcoming_actions'].append(dict(kind=action_kind, label=LABELS[action_kind],
@@ -216,6 +230,16 @@ def next_action(application: dict, events: list[dict], messages: list[dict],
     if not anchor:
         return finish('record_review', reason='Confirm the actual event date; the record has no reliable date.', basis=basis)
     result['meaningful_date'] = anchor.isoformat()
+    cycle_checks = [e for index, e in enumerate(events) if e['event_type'] == 'status_checked'
+                    and (event_day(e.get('occurred_at')) or date.min) >= anchor
+                    and index > meta.get('_sequence', -1)]
+    result['status_check_count'] = len(cycle_checks)
+    result['days_without_progress'] = max(0, (today - anchor).days)
+    expected = event_day(meta.get('expected_response_date'))
+    review_after = event_day(meta.get('review_after'))
+    result['status_review_required'] = (len(cycle_checks) >= 2 and result['days_without_progress'] >= 30
+                                       and (not expected or today >= business_days(expected, 2))
+                                       and (not review_after or today >= business_days(max(anchor, review_after), 10)))
     if stage == 'knocked' and phase == 'application_submitted':
         return finish('record_review', reason='Confirm whether outreach was sent and its actual date.', basis='Contacted stage without sent evidence')
 
@@ -227,6 +251,25 @@ def next_action(application: dict, events: list[dict], messages: list[dict],
     paused = bool(control and control['event_type'] == 'cadence_paused'
                   and (not latest or not control_day or anchor < control_day
                        or (anchor == control_day and meta.get('_sequence', -1) <= events.index(control))))
+    if paused:
+        result['status_review_required'] = False
+    elif (control and control['event_type'] in ('cadence_resumed', 'reminder_set') and cycle_checks
+          and events.index(control) > events.index(cycle_checks[-1])
+          and (event_day(_metadata(control).get('action_date')) or date.min) > today):
+        # A later explicit decision to wait should not immediately ask again.
+        result['status_review_required'] = False
+
+    followups = [e for e in events if e['event_type'] == 'follow_up'
+                 and (event_day(e.get('occurred_at')) or date.min) >= anchor]
+    # A same-day reply starts a new unanswered cycle, using actual timeline position.
+    if latest and phase != 'outreach_sent':
+        same_day_anchor = next((i for i in range(len(events)-1, -1, -1)
+                               if events[i]['event_type'] == phase and event_day(events[i].get('occurred_at')) == anchor), -1)
+        if same_day_anchor >= 0:
+            followups = [e for e in events[same_day_anchor+1:] if e['event_type'] == 'follow_up']
+    result['followup_count'] = len(followups)
+    if paused:
+        return finish('paused', reason='Active follow-ups are paused. The application stage and outcome are unchanged.', basis=basis)
 
     if phase == 'interview_scheduled':
         deadline = event_day(meta.get('due_date'))
@@ -243,15 +286,6 @@ def next_action(application: dict, events: list[dict], messages: list[dict],
     if phase == 'stage_progress':
         return finish('record_review', reason='Confirm the interview, reply or assessment details to schedule the next action.', basis=basis)
 
-    followups = [e for e in events if e['event_type'] == 'follow_up'
-                 and (event_day(e.get('occurred_at')) or date.min) >= anchor]
-    # A same-day reply starts a new unanswered cycle, using actual timeline position.
-    if latest and phase != 'outreach_sent':
-        same_day_anchor = next((i for i in range(len(events)-1, -1, -1)
-                               if events[i]['event_type'] == phase and event_day(events[i].get('occurred_at')) == anchor), -1)
-        if same_day_anchor >= 0:
-            followups = [e for e in events[same_day_anchor+1:] if e['event_type'] == 'follow_up']
-    result['followup_count'] = len(followups)
     if phase == 'interview_completed':
         thanks = any(e['event_type'] == 'thank_you_sent' and
                      (event_day(e.get('occurred_at')) or date.min) >= anchor for e in events)
@@ -260,7 +294,7 @@ def next_action(application: dict, events: list[dict], messages: list[dict],
     if not paused and len(followups) >= 2 and control and control['event_type'] in ('cadence_resumed', 'reminder_set'):
         when = event_day(_metadata(control).get('action_date'))
         return finish('status_check', when, 'The two-follow-up limit has been reached. Check the portal; further outreach awaits a substantive reply.', basis)
-    if paused or len(followups) >= 2:
+    if len(followups) >= 2:
         return finish('paused', reason='Active follow-ups are paused. The application stage and outcome are unchanged.', basis=basis)
 
     expected = event_day(meta.get('expected_response_date'))
@@ -330,12 +364,15 @@ def attention(days_ahead=3):
                       or item['kind'] in ('interview', 'assessment'))]
     priority = {'interview_review': 0, 'interview': 0, 'assessment': 0, 'thank_you': 1,
                 'record_review': 2, 'followup': 3, 'status_check': 4}
-    return sorted(items, key=lambda item: (priority[item['kind']], item['date'] or '', item['company'], item['title']))
+    return sorted(items, key=lambda item: (not item['date'], item['date'] or '',
+                                          priority[item['kind']], item['company'], item['title']))
 
 
 def record_event(application_id, event_type, occurred_at=None, **fields):
     if event_type not in EVENT_LABELS:
         raise ValueError('Choose a supported confirmed event')
+    if fields.get('reminder_source') and event_type != 'reminder_set':
+        raise ValueError('Later can only identify a reminder date change')
     instant = datetime.fromisoformat(occurred_at) if occurred_at else utc_now()
     if instant.tzinfo is None:
         raise ValueError('Event time must include its time zone')

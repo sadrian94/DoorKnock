@@ -61,6 +61,10 @@ and connection invitations are not sent role-specific outreach evidence.
 its anchor/reason, state and follow-up count. Job details and Kanban return the
 same derived action. Dashboard includes due/next-three-day checks and follow-ups,
 all scheduled interview/assessment tasks, and incomplete-record reviews.
+Next actions sort by action date from earliest to latest, then by action priority
+on the same date: interview/assessment, thank-you, record review, follow-up, status
+check. Undated records follow dated actions. Company and title break remaining
+ties. The action date is used, not the interview date or assessment deadline.
 
 `POST /api/pipeline/applications/{application_id}/cadence` records a confirmed
 event and its stage update in one transaction using the existing timeline.
@@ -79,6 +83,31 @@ Dashboard action rows offer context-specific confirmation shortcuts and Later.
 The same shortcuts appear in job details. Opening a shortcut preselects the event
 and shows its actual event time; opening or cancelling never records progress.
 Update progress remains available for other events. Saving refreshes the actions.
+From this version onward, Later saves tag `reminder_source: later` on the existing
+reminder event. Two saved postponements since real progress prompt a tracking
+review: Keep waiting preserves the saved date; Pause tracking requires confirming
+pause; Close application opens the existing closing form and requires an explicit
+outcome. No postponement automatically closes an application. The review is shown
+immediately after saving even when the new date is outside Dashboard attention.
+A reply, confirmed stage change, interview/assessment progress, sent follow-up or
+thank-you, or completed status check resets the count. Acknowledgements and generic
+manual reminder edits do not. Deleted events are excluded and restored events are
+recounted. Older reminders without a source tag are not guessed to be postponements.
+Pausing suppresses scheduled interview/assessment and thank-you reminders as well
+as ordinary follow-ups; it does not alter their confirmed stage or deadline.
+
+After at least two confirmed status checks and 30 calendar days without substantive
+progress, show the same tracking review. Time is measured from the shared meaningful
+event anchor; repeated checks do not restart it. A substantive reply or new scheduled
+interview/assessment resets the check cycle. The prompt may mention that the employer
+might not respond, but never records ghosting or rejection from silence. Pending
+employer timelines and scheduled interview/assessment/thank-you tasks suppress it.
+Explicit pause suppresses the review; a later confirmed reminder/resume with a future
+date after the latest check defers it. Keep waiting on an automatically paused record
+opens Resume reminders with an editable seven-calendar-day date and requires saving.
+Why this date shows the status-check count separately from follow-ups and Later uses.
+Deleted checks are excluded; restoring them recomputes the review.
+
 Event suggestions use the explicit next action first, then the current stage.
 Saved suggests Application submitted; Record review suggests the submission,
 outreach or scheduled interview/assessment event needed to confirm its evidence.

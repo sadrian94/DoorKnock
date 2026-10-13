@@ -78,6 +78,10 @@ export interface PlannedAction {
 }
 
 export interface NextAction {
+  postponement_count?: number;
+  status_check_count?: number;
+  days_without_progress?: number;
+  status_review_required?: boolean;
   current_stage?: string;
   upcoming_actions?: PlannedAction[];
   application_id: string;
