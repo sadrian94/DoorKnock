@@ -16,7 +16,7 @@ export function TimeZoneProvider({ children }: { children: ReactNode }) {
       .catch(err => setError(err instanceof Error ? err.message : 'Could not load the time zone.'));
   };
   useEffect(() => { void load(); }, []);
-  if (!settings) return <div className="p-8 text-slate-300" role="status">
+  if (!settings) return <div className="p-8 text-ui-body" role="status">
     {error || 'Loading time settings…'}
     {error && <button className="ml-4 underline" onClick={() => void load()}>Retry</button>}
   </div>;

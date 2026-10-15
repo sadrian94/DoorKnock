@@ -48,28 +48,28 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
       {/* Header & Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">Saved & Ready Targets</h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <h2 className="text-2xl font-bold text-ui-heading tracking-tight">Saved & Ready Targets</h2>
+          <p className="text-sm text-ui-muted mt-1">
             Jobs prepared for application & outreach. Tailor documents and scout gatekeepers.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ui-muted" />
             <input
               type="text"
               placeholder="Search title, company, or city..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl pl-10 pr-4 py-2 w-64 md:w-80 focus:outline-none focus:border-amber-500 transition shadow-sm"
+              className="bg-ui-panel border border-ui-line text-ui-secondary text-sm rounded-xl pl-10 pr-4 py-2 w-64 md:w-80 focus:outline-none focus:border-ui-line-amber-500 transition shadow-sm"
             />
           </div>
 
           <select
             value={workplaceFilter}
             onChange={(e) => setWorkplaceFilter(e.target.value)}
-            className="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500"
+            className="bg-ui-panel border border-ui-line text-ui-secondary text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-ui-line-amber-500"
           >
             <option value="all">All Workplace</option>
             <option value="remote">Remote</option>
@@ -80,7 +80,7 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
             aria-label="Sort saved jobs"
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as CardSort)}
-            className="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500"
+            className="bg-ui-panel border border-ui-line text-ui-secondary text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-ui-line-amber-500"
           >
             <option value="newest">Newest added</option>
             <option value="oldest">Oldest added</option>
@@ -94,14 +94,14 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
 
       {/* Grid of Jobs */}
       {isLoading ? (
-        <div className="flex items-center justify-center h-64 text-slate-400">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+        <div className="flex items-center justify-center h-64 text-ui-muted">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ui-line-amber-500"></div>
         </div>
       ) : filteredJobs.length === 0 ? (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-12 text-center">
-          <Briefcase className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-slate-300">No saved jobs found</h3>
-          <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+        <div className="bg-ui-panel/50 border border-ui-line-soft rounded-2xl p-12 text-center">
+          <Briefcase className="h-12 w-12 text-ui-faint mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-ui-body">No saved jobs found</h3>
+          <p className="text-sm text-ui-subtle mt-1 max-w-md mx-auto">
             {jobs.length === 0
               ? 'Import a job posting to begin tailoring documents and scouting gatekeepers.'
               : 'Try adjusting your search criteria or workplace filter to find what you need.'}
@@ -110,7 +110,7 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
             <button
               type="button"
               onClick={onOpenImport}
-              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-500 rounded-xl shadow-md shadow-amber-950/40 transition cursor-pointer"
+              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-ui-on-action bg-ui-fill-amber-600 hover:bg-ui-fill-amber-500 rounded-xl shadow-md shadow-amber-950/40 transition cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Import Your First Job</span>
@@ -122,7 +122,7 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
                 setSearchTerm('');
                 setWorkplaceFilter('all');
               }}
-              className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition cursor-pointer"
+              className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-ui-body bg-ui-raised hover:bg-ui-hover border border-ui-line rounded-lg transition cursor-pointer"
             >
               Clear filters
             </button>
@@ -153,16 +153,16 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
 
               switch (decision) {
                 case 'STRONG_KNOCK':
-                  return { label: 'STRONG KNOCK', icon: '🎯', style: 'bg-emerald-950/80 text-emerald-400 border-emerald-700/70' };
+                  return { label: 'STRONG KNOCK', icon: '🎯', style: 'bg-ui-fill-emerald-950/80 text-ui-ink-emerald-400 border-ui-line-emerald-700/70' };
                 case 'SELECTIVE_APPLY':
-                  return { label: 'SELECTIVE APPLY', icon: '⚡', style: 'bg-amber-950/80 text-amber-400 border-amber-700/70' };
+                  return { label: 'SELECTIVE APPLY', icon: '⚡', style: 'bg-ui-fill-amber-950/80 text-ui-ink-amber-400 border-ui-line-amber-700/70' };
                 case 'HIGH_RISK_LOW_ROI':
-                  return { label: 'HIGH RISK', icon: '⚠️', style: 'bg-rose-950/80 text-rose-400 border-rose-800/70' };
+                  return { label: 'HIGH RISK', icon: '⚠️', style: 'bg-ui-fill-rose-950/80 text-ui-ink-rose-400 border-ui-line-rose-800/70' };
                 case 'HARD_PASS':
                 case 'DO_NOT_APPLY':
-                  return { label: 'HARD PASS', icon: '⛔', style: 'bg-slate-900 text-slate-400 border-slate-700' };
+                  return { label: 'HARD PASS', icon: '⛔', style: 'bg-ui-panel text-ui-muted border-ui-line' };
                 default:
-                  return { label: decision.replace(/_/g, ' '), icon: '📋', style: 'bg-slate-800 text-slate-300 border-slate-700' };
+                  return { label: decision.replace(/_/g, ' '), icon: '📋', style: 'bg-ui-raised text-ui-body border-ui-line' };
               }
             })();
 
@@ -182,16 +182,16 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
               <div
                 key={job.id}
                 onClick={() => onSelectJob(job.id)}
-                className="group relative bg-slate-900 border border-slate-800 hover:border-amber-500/50 hover:shadow-xl hover:shadow-amber-950/20 rounded-2xl p-5 transition-all cursor-pointer flex flex-col justify-between"
+                className="group relative bg-ui-panel border border-ui-line-soft hover:border-ui-line-amber-500/50 hover:shadow-xl hover:shadow-amber-950/20 rounded-2xl p-5 transition-all cursor-pointer flex flex-col justify-between"
               >
                 <div>
                   {/* Top Bar: Company & Triage Verdict */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-300 border border-slate-700">
+                      <div className="h-8 w-8 rounded-lg bg-ui-raised flex items-center justify-center text-ui-body border border-ui-line">
                         <Building2 className="h-4 w-4" />
                       </div>
-                      <span className="text-sm font-semibold text-slate-300 truncate max-w-[150px]">
+                      <span className="text-sm font-semibold text-ui-body truncate max-w-[150px]">
                         {job.company}
                       </span>
                     </div>
@@ -206,28 +206,28 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
 
                   {/* Title */}
                   <h3
-                    className="text-base font-bold text-white group-hover:text-amber-400 transition line-clamp-2"
+                    className="text-base font-bold text-ui-heading group-hover:text-ui-ink-amber-400 transition line-clamp-2"
                   >
                     {job.title}
                   </h3>
 
                   {/* Tags: Location, Workplace, Salary */}
-                  <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-slate-400">
+                  <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-ui-muted">
                     {job.location && (
-                      <span className="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60">
-                        <MapPin className="h-3 w-3 text-slate-500" />
+                      <span className="flex items-center gap-1 bg-ui-raised/80 px-2 py-0.5 rounded-md border border-ui-line/60">
+                        <MapPin className="h-3 w-3 text-ui-subtle" />
                         <span className="truncate max-w-[120px]">{job.location}</span>
                       </span>
                     )}
 
                     {job.workplace_type && (
-                      <span className="capitalize bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60">
+                      <span className="capitalize bg-ui-raised/80 px-2 py-0.5 rounded-md border border-ui-line/60">
                         {job.workplace_type}
                       </span>
                     )}
 
                     {salary && (
-                      <span className="flex items-center gap-1 bg-amber-950/40 text-amber-300 px-2 py-0.5 rounded-md border border-amber-800/40 font-medium">
+                      <span className="flex items-center gap-1 bg-ui-fill-amber-950/40 text-ui-ink-amber-300 px-2 py-0.5 rounded-md border border-ui-line-amber-800/40 font-medium">
                         <DollarSign className="h-3 w-3" />
                         {salary}
                       </span>
@@ -236,12 +236,12 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
 
                   {/* Tactical Thesis or Suitability Reason */}
                   {tacticalThesis && (
-                    <div className="mt-4 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 group-hover:border-slate-700/80 transition-colors">
-                      <div className="flex items-center gap-1.5 font-medium text-amber-400/90 mb-1.5">
-                        <Sparkles className="h-3 w-3 text-amber-400" />
+                    <div className="mt-4 text-xs bg-ui-page/60 p-3 rounded-xl border border-ui-line-soft/80 group-hover:border-ui-line/80 transition-colors">
+                      <div className="flex items-center gap-1.5 font-medium text-ui-ink-amber-400/90 mb-1.5">
+                        <Sparkles className="h-3 w-3 text-ui-ink-amber-400" />
                         <span>Tactical Thesis</span>
                       </div>
-                      <p className="text-slate-300/90 leading-relaxed line-clamp-5">
+                      <p className="text-ui-body/90 leading-relaxed line-clamp-5">
                         {tacticalThesis}
                       </p>
                     </div>

@@ -1,0 +1,230 @@
+/* Calm is opt-in. Classic uses the exact fallbacks in tailwind.config.js. */
+html[data-appearance="calm"][data-color-mode="light"] {
+  --ui-heading: 32 44 62;
+  --ui-primary: 37 52 74;
+  --ui-secondary: 51 65 85;
+  --ui-body-text: 71 85 105;
+  --ui-muted: 89 103 122;
+  --ui-subtle: 97 112 134;
+  --ui-faint: 100 116 139;
+  --ui-page: 247 248 250;
+  --ui-panel: 255 255 255;
+  --ui-raised: 240 243 247;
+  --ui-hover: 231 237 244;
+  --ui-fill-muted: 221 229 239;
+  --ui-line-soft: 220 226 235;
+  --ui-line: 208 217 229;
+  --ui-line-strong: 183 197 214;
+  --ui-line-subtle: 231 237 244;
+  --ui-overlay: 24 35 56;
+  --ui-on-action: 255 255 255;
+  --ui-on-action-icon: 255 255 255;
+  --ui-on-color: 255 255 255;
+  --ui-brand-mark: 155 81 4;
+  --ui-body-bg: 247 248 250;
+  --ui-fill-amber-500: 133 67 3;
+  --ui-fill-amber-600: 155 81 4;
+  --ui-line-amber-400: 252 211 77;
+  --ui-ink-amber-400: 155 81 4;
+  --ui-ink-amber-500: 155 81 4;
+  --ui-ink-amber-300: 155 81 4;
+  --ui-line-amber-700: 252 211 77;
+  --ui-line-amber-500: 252 211 77;
+  --ui-fill-red-950: 254 226 226;
+  --ui-line-red-800: 252 165 165;
+  --ui-ink-red-300: 185 28 28;
+  --ui-ink-red-400: 185 28 28;
+  --ui-ink-emerald-400: 4 120 87;
+  --ui-fill-emerald-950: 209 250 229;
+  --ui-line-emerald-800: 110 231 183;
+  --ui-ink-emerald-300: 4 120 87;
+  --ui-line-emerald-700: 110 231 183;
+  --ui-fill-blue-950: 219 234 254;
+  --ui-line-blue-700: 147 197 253;
+  --ui-ink-blue-400: 29 78 216;
+  --ui-line-red-700: 252 165 165;
+  --ui-fill-amber-950: 254 243 199;
+  --ui-ink-rose-400: 190 18 60;
+  --ui-fill-blue-500: 29 78 216;
+  --ui-ink-blue-300: 29 78 216;
+  --ui-line-blue-500: 147 197 253;
+  --ui-line-amber-900: 252 211 77;
+  --ui-ink-emerald-500: 4 120 87;
+  --ui-fill-emerald-600: 4 120 87;
+  --ui-fill-emerald-500: 6 95 70;
+  --ui-line-amber-800: 252 211 77;
+  --ui-ink-amber-200: 155 81 4;
+  --ui-fill-rose-950: 255 228 230;
+  --ui-line-rose-800: 253 164 175;
+  --ui-ink-indigo-400: 67 56 202;
+  --ui-line-amber-950: 252 211 77;
+  --ui-line-emerald-950: 110 231 183;
+  --ui-ink-rose-500: 190 18 60;
+  --ui-line-rose-950: 253 164 175;
+  --ui-line-emerald-500: 110 231 183;
+  --ui-ink-blue-500: 29 78 216;
+  --ui-ink-blue-200: 29 78 216;
+  --ui-line-blue-900: 147 197 253;
+  --ui-fill-blue-600: 37 99 235;
+  --ui-line-red-900: 252 165 165;
+  --ui-ink-red-200: 185 28 28;
+  --ui-fill-red-600: 220 38 38;
+  --ui-fill-red-500: 185 28 28;
+  --ui-line-blue-800: 147 197 253;
+  --ui-fill-purple-950: 243 232 255;
+  --ui-ink-purple-300: 126 34 206;
+  --ui-line-purple-800: 216 180 254;
+  --ui-fill-indigo-950: 224 231 255;
+  --ui-ink-indigo-300: 67 56 202;
+  --ui-line-indigo-800: 165 180 252;
+  --ui-fill-cyan-950: 207 250 254;
+  --ui-ink-cyan-300: 14 116 144;
+  --ui-line-cyan-800: 103 232 249;
+  --ui-fill-teal-950: 204 251 241;
+  --ui-ink-teal-300: 15 118 110;
+  --ui-line-teal-800: 94 234 212;
+  --ui-fill-orange-950: 255 237 213;
+  --ui-ink-orange-300: 154 52 18;
+  --ui-line-orange-800: 253 186 116;
+  --ui-line-red-950: 252 165 165;
+  --ui-fill-amber-700: 254 243 199;
+  --ui-fill-amber-800: 254 243 199;
+  --ui-ink-amber-100: 124 59 0;
+}
+
+html[data-appearance="calm"][data-color-mode="dark"] {
+  --ui-heading: 232 238 247;
+  --ui-primary: 225 233 245;
+  --ui-secondary: 209 220 236;
+  --ui-body-text: 190 203 221;
+  --ui-muted: 165 178 198;
+  --ui-subtle: 153 169 191;
+  --ui-faint: 145 162 187;
+  --ui-page: 11 18 32;
+  --ui-panel: 18 28 45;
+  --ui-raised: 24 37 58;
+  --ui-hover: 34 50 75;
+  --ui-fill-muted: 52 73 96;
+  --ui-line-soft: 42 57 80;
+  --ui-line: 53 72 97;
+  --ui-line-strong: 72 97 124;
+  --ui-line-subtle: 32 46 67;
+  --ui-overlay: 0 0 0;
+  --ui-on-action: 23 19 7;
+  --ui-on-action-icon: 23 19 7;
+  --ui-on-color: 255 255 255;
+  --ui-brand-mark: 244 182 78;
+  --ui-body-bg: 11 18 32;
+  --ui-fill-amber-500: 244 182 78;
+  --ui-fill-amber-600: 230 163 62;
+  --ui-line-amber-400: 251 191 36;
+  --ui-ink-amber-400: 244 182 78;
+  --ui-ink-amber-500: 244 182 78;
+  --ui-ink-amber-300: 244 182 78;
+  --ui-line-amber-700: 180 83 9;
+  --ui-line-amber-500: 245 158 11;
+  --ui-fill-red-950: 69 10 10;
+  --ui-line-red-800: 185 28 28;
+  --ui-ink-red-300: 252 165 165;
+  --ui-ink-red-400: 248 113 113;
+  --ui-ink-emerald-400: 52 211 153;
+  --ui-fill-emerald-950: 2 44 34;
+  --ui-line-emerald-800: 4 120 87;
+  --ui-ink-emerald-300: 110 231 183;
+  --ui-line-emerald-700: 4 120 87;
+  --ui-fill-blue-950: 23 37 84;
+  --ui-line-blue-700: 29 78 216;
+  --ui-ink-blue-400: 96 165 250;
+  --ui-line-red-700: 185 28 28;
+  --ui-fill-amber-950: 50 41 28;
+  --ui-ink-rose-400: 251 113 133;
+  --ui-fill-blue-500: 29 78 216;
+  --ui-ink-blue-300: 147 197 253;
+  --ui-line-blue-500: 59 130 246;
+  --ui-line-amber-900: 180 83 9;
+  --ui-ink-emerald-500: 16 185 129;
+  --ui-fill-emerald-600: 4 120 87;
+  --ui-fill-emerald-500: 6 95 70;
+  --ui-line-amber-800: 180 83 9;
+  --ui-ink-amber-200: 244 182 78;
+  --ui-fill-rose-950: 76 5 25;
+  --ui-line-rose-800: 190 18 60;
+  --ui-ink-indigo-400: 129 140 248;
+  --ui-line-amber-950: 180 83 9;
+  --ui-line-emerald-950: 4 120 87;
+  --ui-ink-rose-500: 244 63 94;
+  --ui-line-rose-950: 190 18 60;
+  --ui-line-emerald-500: 16 185 129;
+  --ui-ink-blue-500: 59 130 246;
+  --ui-ink-blue-200: 191 219 254;
+  --ui-line-blue-900: 29 78 216;
+  --ui-fill-blue-600: 37 99 235;
+  --ui-line-red-900: 185 28 28;
+  --ui-ink-red-200: 254 202 202;
+  --ui-fill-red-600: 220 38 38;
+  --ui-fill-red-500: 185 28 28;
+  --ui-line-blue-800: 29 78 216;
+  --ui-fill-purple-950: 59 7 100;
+  --ui-ink-purple-300: 216 180 254;
+  --ui-line-purple-800: 126 34 206;
+  --ui-fill-indigo-950: 30 27 75;
+  --ui-ink-indigo-300: 165 180 252;
+  --ui-line-indigo-800: 67 56 202;
+  --ui-fill-cyan-950: 8 51 68;
+  --ui-ink-cyan-300: 103 232 249;
+  --ui-line-cyan-800: 14 116 144;
+  --ui-fill-teal-950: 4 47 46;
+  --ui-ink-teal-300: 94 234 212;
+  --ui-line-teal-800: 15 118 110;
+  --ui-fill-orange-950: 67 20 7;
+  --ui-ink-orange-300: 253 186 116;
+  --ui-line-orange-800: 194 65 12;
+  --ui-line-red-950: 185 28 28;
+  --ui-fill-amber-700: 183 121 36;
+  --ui-fill-amber-800: 50 41 28;
+  --ui-ink-amber-100: 244 182 78;
+}
+
+html[data-appearance="calm"] {
+  --ui-radius-lg: 7px;
+  --ui-radius-xl: 9px;
+  --ui-radius-2xl: 12px;
+}
+
+html[data-appearance="calm"] .app-main { line-height: 1.6; }
+html[data-appearance="calm"] .font-bold { font-weight: 600; }
+html[data-appearance="calm"] [class~="text-[10px]"] { font-size: 11px; }
+html[data-appearance="calm"] :is(.shadow, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl, .shadow-inner) { box-shadow: none; }
+html[data-appearance="calm"] .app-brand-mark {
+  background-image: none;
+  background-color: rgb(var(--ui-fill-amber-950));
+  border-color: rgb(var(--ui-line-soft));
+}
+html[data-appearance="calm"] .app-main :is(.p-5, .p-6) { padding: 1.625rem; }
+html[data-appearance="calm"] :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid rgb(var(--ui-ink-amber-500));
+  outline-offset: 3px;
+}
+
+.appearance-choice:focus-within { outline: 2px solid rgb(var(--ui-ink-amber-500, 245 158 11)); outline-offset: 3px; }
+.appearance-swatch { height: 56px; display: flex; gap: 5px; padding: 9px; border-radius: 6px; }
+.appearance-swatch span { display: block; border-radius: 3px; }
+.appearance-swatch span:first-child { width: 30%; }
+.appearance-swatch span:nth-child(2) { flex: 1; }
+.appearance-swatch span:last-child { width: 12%; height: 12px; margin-top: auto; }
+/* Fixed samples deliberately illustrate each style regardless of the current selection. */
+.appearance-swatch-classic { background: #020617; border: 1px solid #334155; }
+.appearance-swatch-classic span { background: #1e293b; }
+.appearance-swatch-classic span:last-child { background: #d97706; }
+.appearance-swatch-calm { background: #f7f8fa; border: 1px solid #dce2eb; }
+.appearance-swatch-calm span { background: #e7edf4; }
+.appearance-swatch-calm span:nth-child(2) { background: #ffffff; border: 1px solid #dce2eb; }
+.appearance-swatch-calm span:last-child { background: #9b5104; }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-appearance="calm"] *, html[data-appearance="calm"] *::before, html[data-appearance="calm"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

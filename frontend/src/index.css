@@ -5,8 +5,8 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #0f172a;
-  color: #f8fafc;
+  background-color: rgb(var(--ui-body-bg, 15 23 42));
+  color: rgb(var(--ui-primary, 248 250 252));
   overflow-x: hidden;
 }
 
@@ -17,14 +17,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: rgb(var(--ui-raised, 30 41 59));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: rgb(var(--ui-fill-muted, 71 85 105));
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: rgb(var(--ui-subtle, 100 116 139));
 }

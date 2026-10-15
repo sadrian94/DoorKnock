@@ -159,10 +159,10 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-white">
+    <div className="min-h-screen bg-ui-page text-ui-primary flex flex-col font-sans selection:bg-ui-fill-amber-500 selection:text-ui-on-action">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-amber-600 text-white font-medium text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-amber-400/40 animate-bounce">
+        <div className="fixed bottom-6 right-6 z-50 bg-ui-fill-amber-600 text-ui-on-action font-medium text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-ui-line-amber-400/40 animate-bounce">
           <span>{toastMessage}</span>
         </div>
       )}
@@ -177,7 +177,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Views */}
-      <main className="flex-1">
+      <main className="app-main flex-1">
         {currentTab === 'dashboard' ? (
           <DashboardView
             data={dashboardData}

@@ -87,6 +87,12 @@ uv run pytest tests
 
 For a frontend development server, run `npm run dev` from `frontend/` while the backend is running; Vite proxies `/api` requests to port 8000.
 
+### Appearance
+
+In **Settings → Appearance**, choose **Classic** (the original, default style) or **Calm**. Calm supports Light, Dark, and Follow system. Changes apply immediately and are saved in the current browser. If browser storage is unavailable, the selection lasts for the current session. Switching styles keeps the current page and in-progress inputs; it does not change application records or generated PDFs.
+
+Appearance styles use shared `ui-*` color roles in `frontend/tailwind.config.js`. Their fallbacks preserve Classic's colors; `frontend/src/appearance.css` defines the opt-in Calm overrides. Keep new interface colors in these roles, including colored status labels and button foregrounds. The early `appearance-init.js` script applies preferences before React loads.
+
 ### Time zone
 
 Choose the local time zone in **Settings → Time zone**, or select **Use device time zone** and save. The default is `America/Chicago`. The saved preference applies to displayed event dates, the dashboard, follow-up calendar calculations, and dates in new documents and workspace names. Daylight saving time is automatic. Settings are stored locally in the Git-ignored `workspace/time-settings.json`.

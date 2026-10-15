@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTimeSettings } from '../timeSettings';
 import { formatDate, formatDateTime } from '../time';
+import { AppearanceSettings } from './AppearanceSettings';
 
 type Provider = 'gemini' | 'codex';
 type Settings = { provider: Provider; model: string; configured: boolean };
@@ -251,22 +252,23 @@ export const SettingsView: React.FC = () => {
   return (
     <section className="max-w-3xl mx-auto px-6 py-10 space-y-7">
       <div>
-        <h2 className="text-2xl font-semibold text-white">Settings</h2>
-        <p className="text-sm text-slate-400 mt-2">Manage your time zone, Gmail scans, AI, and resume formatting.</p>
+        <h2 className="text-2xl font-semibold text-ui-heading">Settings</h2>
+        <p className="text-sm text-ui-muted mt-2">Manage appearance, your time zone, Gmail scans, AI, and resume formatting.</p>
       </div>
-      <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+      <AppearanceSettings />
+      <div className="rounded-xl border border-ui-line-soft bg-ui-panel p-6 space-y-5">
         <div>
-          <h3 className="text-lg font-semibold text-white">Time zone</h3>
-          <p className="text-sm text-slate-400 mt-1">Use the same time zone for dates, follow-ups, and new documents. Daylight saving time adjusts automatically.</p>
+          <h3 className="text-lg font-semibold text-ui-heading">Time zone</h3>
+          <p className="text-sm text-ui-muted mt-1">Use the same time zone for dates, follow-ups, and new documents. Daylight saving time adjusts automatically.</p>
         </div>
-        <label className="block text-sm text-slate-200" htmlFor="timezone">Time zone</label>
+        <label className="block text-sm text-ui-secondary" htmlFor="timezone">Time zone</label>
         <select id="timezone" value={selectedTimezone} disabled={timeBusy}
           onChange={event => { setSelectedTimezone(event.target.value); setTimeMessage(''); }}
-          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white">
+          className="w-full rounded-lg border border-ui-line bg-ui-page px-3 py-2 text-ui-heading">
           {timeSettings.available_timezones.map(zone => <option key={zone} value={zone}>{zone.replaceAll('_', ' ')}</option>)}
         </select>
-        <p className="text-sm text-slate-300">Current time: <span className="font-medium text-white">{formatDateTime(previewInstant, selectedTimezone)}</span></p>
-        <p className="text-xs text-slate-400">Saved time zone: {timeSettings.timezone}. Existing application dates and published documents keep their original dates. Older times without a recorded time zone are shown as entered.</p>
+        <p className="text-sm text-ui-body">Current time: <span className="font-medium text-ui-heading">{formatDateTime(previewInstant, selectedTimezone)}</span></p>
+        <p className="text-xs text-ui-muted">Saved time zone: {timeSettings.timezone}. Existing application dates and published documents keep their original dates. Older times without a recorded time zone are shown as entered.</p>
         <div className="flex flex-wrap gap-3">
           <button disabled={timeBusy} onClick={() => {
             const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -274,155 +276,155 @@ export const SettingsView: React.FC = () => {
               setSelectedTimezone(zone);
               setTimeMessage('Device time zone selected. Click Save time zone to apply.');
             } else { setTimeMessage('Select your time zone from the list.'); }
-          }} className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-50">Use device time zone</button>
+          }} className="rounded-lg border border-ui-line px-4 py-2 text-sm text-ui-secondary hover:bg-ui-raised disabled:opacity-50">Use device time zone</button>
           <button onClick={() => void saveTimezone()} disabled={timeBusy}
-            className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50">{timeBusy ? 'Saving…' : 'Save time zone'}</button>
+            className="rounded-lg bg-ui-fill-amber-600 px-4 py-2 text-sm font-semibold text-ui-on-action hover:bg-ui-fill-amber-500 disabled:opacity-50">{timeBusy ? 'Saving…' : 'Save time zone'}</button>
         </div>
-        {timeMessage && <p role="status" className="text-sm text-slate-200">{timeMessage}</p>}
+        {timeMessage && <p role="status" className="text-sm text-ui-secondary">{timeMessage}</p>}
       </div>
-      <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+      <div className="rounded-xl border border-ui-line-soft bg-ui-panel p-6 space-y-5">
         <div>
-          <h3 className="text-lg font-semibold text-white">Gmail application updates</h3>
-          <p className="text-sm text-slate-400 mt-1">Connect your Gmail account to find messages about jobs already saved in DoorKnock.</p>
+          <h3 className="text-lg font-semibold text-ui-heading">Gmail application updates</h3>
+          <p className="text-sm text-ui-muted mt-1">Connect your Gmail account to find messages about jobs already saved in DoorKnock.</p>
         </div>
-        <ol className="space-y-3 text-sm text-slate-200 list-decimal list-inside">
+        <ol className="space-y-3 text-sm text-ui-secondary list-decimal list-inside">
           <li><span className="font-medium">Set up Gmail once.</span> DoorKnock needs a one-time Google setup before anyone can connect. If you did not install DoorKnock yourself, ask the person who did to complete the setup below.</li>
           <li><span className="font-medium">Connect your account.</span> Click Connect Gmail, sign in to Google, allow read-only access, then return here and click Check connection.</li>
           <li><span className="font-medium">Choose a scan size.</span> Pick how many recent days to check and how many messages to read per scan. The defaults are 14 days and 150 messages.</li>
           <li><span className="font-medium">Scan and review.</span> Click Scan Gmail. Application messages appear in Email review. Open the original email and confirm any stage change. If more messages remain, use Scan next page.</li>
         </ol>
-        <div className="rounded-lg border border-amber-700/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
+        <div className="rounded-lg border border-ui-line-amber-700/40 bg-ui-fill-amber-950/30 px-4 py-3 text-sm text-ui-ink-amber-100">
           Scanning can change a stage immediately when a message clearly matches one application and confirms an application, recruiter screen, or rejection. Uncertain messages wait for your decision. No emails are sent or changed in Gmail.
         </div>
-        <p className="text-xs text-slate-400">Job alerts and recommendation digests from platforms such as LinkedIn, Handshake, and HiringCafe are filtered out. Direct application updates from those platforms can still be checked. Alerts may still count toward the scan size; use Scan next page if more messages are available.</p>
-        <p className="text-sm text-slate-300">Setup: <span className={gmailConfigured ? 'text-emerald-400' : 'text-amber-400'}>{gmailConfigured ? 'ready' : 'needed'}</span> · Gmail account: <span className={gmailConnected ? 'text-emerald-400' : 'text-amber-400'}>{gmailConnected ? 'connected' : 'not connected'}</span></p>
-        <details className="rounded-lg border border-slate-700 bg-slate-950/70 p-4 text-sm text-slate-300">
-          <summary className="cursor-pointer font-medium text-slate-100">One-time Google setup instructions</summary>
+        <p className="text-xs text-ui-muted">Job alerts and recommendation digests from platforms such as LinkedIn, Handshake, and HiringCafe are filtered out. Direct application updates from those platforms can still be checked. Alerts may still count toward the scan size; use Scan next page if more messages are available.</p>
+        <p className="text-sm text-ui-body">Setup: <span className={gmailConfigured ? 'text-ui-ink-emerald-400' : 'text-ui-ink-amber-400'}>{gmailConfigured ? 'ready' : 'needed'}</span> · Gmail account: <span className={gmailConnected ? 'text-ui-ink-emerald-400' : 'text-ui-ink-amber-400'}>{gmailConnected ? 'connected' : 'not connected'}</span></p>
+        <details className="rounded-lg border border-ui-line bg-ui-page/70 p-4 text-sm text-ui-body">
+          <summary className="cursor-pointer font-medium text-ui-primary">One-time Google setup instructions</summary>
           <ol className="mt-3 space-y-2 list-decimal list-inside">
             <li>In Google Cloud, enable the Gmail API and create an OAuth client of type <strong>Web application</strong>.</li>
-            <li>Add <code className="text-amber-300">http://localhost:8000/api/gmail/callback</code> as an authorized redirect URI.</li>
-            <li>Put the client ID and client secret in DoorKnock's local <code className="text-amber-300">.env</code> file as <code className="text-amber-300">GMAIL_CLIENT_ID</code> and <code className="text-amber-300">GMAIL_CLIENT_SECRET</code>, then restart DoorKnock.</li>
+            <li>Add <code className="text-ui-ink-amber-300">http://localhost:8000/api/gmail/callback</code> as an authorized redirect URI.</li>
+            <li>Put the client ID and client secret in DoorKnock's local <code className="text-ui-ink-amber-300">.env</code> file as <code className="text-ui-ink-amber-300">GMAIL_CLIENT_ID</code> and <code className="text-ui-ink-amber-300">GMAIL_CLIENT_SECRET</code>, then restart DoorKnock.</li>
             <li>If Google's consent screen is in testing mode, add the Gmail account as a test user.</li>
           </ol>
-          <p className="mt-3 text-xs text-slate-400">These credentials stay on this computer. DoorKnock requests read-only Gmail access and saves references to matched messages, not email text or attachments.</p>
+          <p className="mt-3 text-xs text-ui-muted">These credentials stay on this computer. DoorKnock requests read-only Gmail access and saves references to matched messages, not email text or attachments.</p>
         </details>
         <div className="flex flex-wrap gap-3">
-          <button onClick={connectGmail} disabled={gmailBusy || !gmailConfigured} className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white disabled:opacity-50">Connect Gmail</button>
-          <button onClick={() => void refreshGmail().catch(error => setGmailMessage(String(error)))} disabled={gmailBusy} className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white disabled:opacity-50">Check connection</button>
+          <button onClick={connectGmail} disabled={gmailBusy || !gmailConfigured} className="rounded-lg border border-ui-line-strong px-4 py-2 text-sm text-ui-heading disabled:opacity-50">Connect Gmail</button>
+          <button onClick={() => void refreshGmail().catch(error => setGmailMessage(String(error)))} disabled={gmailBusy} className="rounded-lg border border-ui-line-strong px-4 py-2 text-sm text-ui-heading disabled:opacity-50">Check connection</button>
         </div>
-        {!gmailConfigured && <p className="text-xs text-slate-400">Connect Gmail becomes available after the one-time setup.</p>}
+        {!gmailConfigured && <p className="text-xs text-ui-muted">Connect Gmail becomes available after the one-time setup.</p>}
         <div className="flex flex-wrap gap-4">
-          <label className="text-sm text-slate-200">Recent days (1–30)
-            <input type="number" min="1" max="30" value={gmailDays} onChange={event => setGmailDays(Number(event.target.value))} className="ml-2 w-20 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-white" />
+          <label className="text-sm text-ui-secondary">Recent days (1–30)
+            <input type="number" min="1" max="30" value={gmailDays} onChange={event => setGmailDays(Number(event.target.value))} className="ml-2 w-20 rounded border border-ui-line bg-ui-page px-2 py-1 text-ui-heading" />
           </label>
-          <label className="text-sm text-slate-200">Messages per scan (100–200)
-            <input type="number" min="100" max="200" value={gmailLimit} onChange={event => setGmailLimit(Number(event.target.value))} className="ml-2 w-20 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-white" />
+          <label className="text-sm text-ui-secondary">Messages per scan (100–200)
+            <input type="number" min="100" max="200" value={gmailLimit} onChange={event => setGmailLimit(Number(event.target.value))} className="ml-2 w-20 rounded border border-ui-line bg-ui-page px-2 py-1 text-ui-heading" />
           </label>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => void scanGmail()} disabled={gmailBusy || !gmailConnected || gmailLimit < 100 || gmailLimit > 200 || gmailDays < 1 || gmailDays > 30} className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50">{gmailBusy ? 'Working…' : 'Scan Gmail'}</button>
-          {gmailNextPage && <button onClick={() => void scanGmail(true)} disabled={gmailBusy} className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white disabled:opacity-50">Scan next page</button>}
+          <button onClick={() => void scanGmail()} disabled={gmailBusy || !gmailConnected || gmailLimit < 100 || gmailLimit > 200 || gmailDays < 1 || gmailDays > 30} className="rounded-lg bg-ui-fill-amber-600 px-4 py-2 text-sm font-semibold text-ui-on-action hover:bg-ui-fill-amber-500 disabled:opacity-50">{gmailBusy ? 'Working…' : 'Scan Gmail'}</button>
+          {gmailNextPage && <button onClick={() => void scanGmail(true)} disabled={gmailBusy} className="rounded-lg border border-ui-line-strong px-4 py-2 text-sm text-ui-heading disabled:opacity-50">Scan next page</button>}
         </div>
-        {gmailMessage && <p role="status" className="text-sm text-slate-200">{gmailMessage}</p>}
-        {gmailReviews.length > 0 && <div className="space-y-3 rounded-lg border border-amber-700/40 bg-slate-950/60 p-4">
-          <h4 className="text-sm font-semibold text-white">Email review ({gmailReviews.length})</h4>
-          <p className="text-xs text-slate-400">Open each message in Gmail to check the details. Choose an application and stage only when the email supports the change.</p>
+        {gmailMessage && <p role="status" className="text-sm text-ui-secondary">{gmailMessage}</p>}
+        {gmailReviews.length > 0 && <div className="space-y-3 rounded-lg border border-ui-line-amber-700/40 bg-ui-page/60 p-4">
+          <h4 className="text-sm font-semibold text-ui-heading">Email review ({gmailReviews.length})</h4>
+          <p className="text-xs text-ui-muted">Open each message in Gmail to check the details. Choose an application and stage only when the email supports the change.</p>
           {gmailReviews.map(item => {
             const choice = reviewChoices[item.message_id] || { applicationId: '', stage: '' };
-            return <div key={item.message_id} className="space-y-2 border-t border-slate-800 pt-3 text-sm text-slate-200">
+            return <div key={item.message_id} className="space-y-2 border-t border-ui-line-soft pt-3 text-sm text-ui-secondary">
               <p>{gmailReviewReasons[item.reason_code] || 'Needs a manual check'} · {gmailEventLabels[item.event_code] || 'Related message'} · {formatDate(item.received_at, timeSettings.timezone)}</p>
-              <a className="text-amber-400 underline" href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(item.message_id)}`} target="_blank" rel="noopener noreferrer">Open original email in Gmail</a>
+              <a className="text-ui-ink-amber-400 underline" href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(item.message_id)}`} target="_blank" rel="noopener noreferrer">Open original email in Gmail</a>
               <div className="flex flex-wrap gap-2">
-                <label className="text-xs text-slate-400">Application
-                  <select aria-label="Application to update" value={choice.applicationId} onChange={event => setReviewChoices(current => ({ ...current, [item.message_id]: { ...choice, applicationId: event.target.value } }))} className="mt-1 block max-w-72 rounded border border-slate-700 bg-slate-900 px-2 py-2 text-sm text-white">
+                <label className="text-xs text-ui-muted">Application
+                  <select aria-label="Application to update" value={choice.applicationId} onChange={event => setReviewChoices(current => ({ ...current, [item.message_id]: { ...choice, applicationId: event.target.value } }))} className="mt-1 block max-w-72 rounded border border-ui-line bg-ui-panel px-2 py-2 text-sm text-ui-heading">
                     <option value="">Choose application</option>
                     {gmailApplications.map(app => <option key={app.id} value={app.id}>{app.company} · {app.title} ({app.current_stage === 'knocked' ? 'Contacted' : app.current_stage.replaceAll('_', ' ')}){item.candidate_application_ids.includes(app.id) ? ' · possible match' : ''}</option>)}
                   </select>
                 </label>
-                <label className="text-xs text-slate-400">Stage
-                  <select aria-label="Stage to set" value={choice.stage} onChange={event => setReviewChoices(current => ({ ...current, [item.message_id]: { ...choice, stage: event.target.value } }))} className="mt-1 block rounded border border-slate-700 bg-slate-900 px-2 py-2 text-sm text-white">
+                <label className="text-xs text-ui-muted">Stage
+                  <select aria-label="Stage to set" value={choice.stage} onChange={event => setReviewChoices(current => ({ ...current, [item.message_id]: { ...choice, stage: event.target.value } }))} className="mt-1 block rounded border border-ui-line bg-ui-panel px-2 py-2 text-sm text-ui-heading">
                     <option value="">Choose stage</option>
                     {reviewStages.map(stage => <option key={stage} value={stage}>{stage === 'knocked' ? 'Contacted' : stage.replaceAll('_', ' ')}</option>)}
                   </select>
                 </label>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => void resolveGmailReview(item, 'apply')} disabled={Boolean(reviewBusy) || !choice.applicationId || !choice.stage} className="rounded bg-amber-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Confirm stage</button>
-                <button onClick={() => void resolveGmailReview(item, 'dismiss')} disabled={Boolean(reviewBusy)} className="rounded border border-slate-600 px-3 py-2 text-xs text-slate-200 disabled:opacity-50">Dismiss</button>
+                <button onClick={() => void resolveGmailReview(item, 'apply')} disabled={Boolean(reviewBusy) || !choice.applicationId || !choice.stage} className="rounded bg-ui-fill-amber-600 px-3 py-2 text-xs font-semibold text-ui-on-action disabled:opacity-50">Confirm stage</button>
+                <button onClick={() => void resolveGmailReview(item, 'dismiss')} disabled={Boolean(reviewBusy)} className="rounded border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary disabled:opacity-50">Dismiss</button>
               </div>
             </div>;
           })}
         </div>}
-        {gmailMessages.length > 0 && <div className="space-y-2"><h4 className="text-sm font-semibold text-white">Recent matches</h4>{gmailMessages.map(item => <p key={item.message_id} className="text-xs text-slate-300">{item.company} · {item.title} · {gmailEventLabels[item.event_code] || 'Related message'} · {item.stage_applied ? 'Stage updated' : 'Saved for reference'} · <a className="text-amber-400 underline" href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(item.message_id)}`} target="_blank" rel="noopener noreferrer">Open in Gmail</a></p>)}</div>}
+        {gmailMessages.length > 0 && <div className="space-y-2"><h4 className="text-sm font-semibold text-ui-heading">Recent matches</h4>{gmailMessages.map(item => <p key={item.message_id} className="text-xs text-ui-body">{item.company} · {item.title} · {gmailEventLabels[item.event_code] || 'Related message'} · {item.stage_applied ? 'Stage updated' : 'Saved for reference'} · <a className="text-ui-ink-amber-400 underline" href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(item.message_id)}`} target="_blank" rel="noopener noreferrer">Open in Gmail</a></p>)}</div>}
       </div>
-      <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
-        <h3 className="text-lg font-semibold text-white">AI provider</h3>
-        <label className="block text-sm font-medium text-slate-200" htmlFor="ai-provider">Provider</label>
+      <div className="rounded-xl border border-ui-line-soft bg-ui-panel p-6 space-y-5">
+        <h3 className="text-lg font-semibold text-ui-heading">AI provider</h3>
+        <label className="block text-sm font-medium text-ui-secondary" htmlFor="ai-provider">Provider</label>
         <select id="ai-provider" value={provider} onChange={event => {
           const next = event.target.value as Provider;
           setProvider(next);
           setModel(defaults[next]);
           setConfigured(false);
           setMessage('');
-        }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white">
+        }} className="w-full rounded-lg border border-ui-line bg-ui-page px-3 py-2 text-ui-heading">
           <option value="gemini">Google Gemini</option>
           <option value="codex">Codex (ChatGPT sign-in)</option>
         </select>
-        <label className="block text-sm font-medium text-slate-200" htmlFor="ai-model">Model ID</label>
+        <label className="block text-sm font-medium text-ui-secondary" htmlFor="ai-model">Model ID</label>
         <input id="ai-model" value={model} onChange={event => setModel(event.target.value)}
           placeholder={provider === 'codex' ? 'Leave blank to use Codex default' : undefined}
-          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white" />
+          className="w-full rounded-lg border border-ui-line bg-ui-page px-3 py-2 text-ui-heading" />
         {provider === 'codex' && (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ui-subtle">
             Leave blank to use the model selected by Codex.{' '}
-            <a href="https://learn.chatgpt.com/docs/models?surface=app" target="_blank" rel="noopener noreferrer" className="text-amber-400 underline hover:text-amber-300">
+            <a href="https://learn.chatgpt.com/docs/models?surface=app" target="_blank" rel="noopener noreferrer" className="text-ui-ink-amber-400 underline hover:text-ui-ink-amber-300">
               View Codex model IDs
             </a>
           </p>
         )}
         {provider === 'gemini' ? (
-          <p className="text-sm text-slate-400">Server credential: <span className={configured ? 'text-emerald-400' : 'text-amber-400'}>{configured ? 'configured' : 'not configured'}</span>. Set GEMINI_API_KEY in the server environment or local .env file.</p>
+          <p className="text-sm text-ui-muted">Server credential: <span className={configured ? 'text-ui-ink-emerald-400' : 'text-ui-ink-amber-400'}>{configured ? 'configured' : 'not configured'}</span>. Set GEMINI_API_KEY in the server environment or local .env file.</p>
         ) : (
-          <div className="space-y-3 text-sm text-slate-400">
-            <p>Codex CLI: <span className={configured ? 'text-emerald-400' : 'text-amber-400'}>{configured ? 'available' : 'not found on the server PATH'}</span></p>
-            <p>ChatGPT connection: <span className={codexConnected ? 'text-emerald-400' : 'text-amber-400'}>{codexConnected ? 'connected' : 'not connected'}</span></p>
+          <div className="space-y-3 text-sm text-ui-muted">
+            <p>Codex CLI: <span className={configured ? 'text-ui-ink-emerald-400' : 'text-ui-ink-amber-400'}>{configured ? 'available' : 'not found on the server PATH'}</span></p>
+            <p>ChatGPT connection: <span className={codexConnected ? 'text-ui-ink-emerald-400' : 'text-ui-ink-amber-400'}>{codexConnected ? 'connected' : 'not connected'}</span></p>
             <div className="flex gap-3">
-              <button onClick={connectCodex} disabled={busy || !configured || codexConnected} className="rounded-lg border border-slate-600 px-4 py-2 text-white hover:bg-slate-800 disabled:opacity-50">{codexConnected ? 'Codex connected' : 'Connect Codex'}</button>
-              <button onClick={() => void checkCodex()} className="rounded-lg border border-slate-700 px-4 py-2 text-slate-200 hover:bg-slate-800">Check status</button>
+              <button onClick={connectCodex} disabled={busy || !configured || codexConnected} className="rounded-lg border border-ui-line-strong px-4 py-2 text-ui-heading hover:bg-ui-raised disabled:opacity-50">{codexConnected ? 'Codex connected' : 'Connect Codex'}</button>
+              <button onClick={() => void checkCodex()} className="rounded-lg border border-ui-line px-4 py-2 text-ui-secondary hover:bg-ui-raised">Check status</button>
             </div>
-            {authUrl && !codexConnected && <a href={authUrl} target="_blank" rel="noreferrer" className="text-amber-400 underline">Open ChatGPT sign-in</a>}
+            {authUrl && !codexConnected && <a href={authUrl} target="_blank" rel="noreferrer" className="text-ui-ink-amber-400 underline">Open ChatGPT sign-in</a>}
           </div>
         )}
-        <button onClick={save} disabled={busy || (provider === 'gemini' && !model.trim())} className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50">{busy ? 'Saving…' : 'Save settings'}</button>
-        {message && <p role="status" className="text-sm text-slate-200">{message}</p>}
+        <button onClick={save} disabled={busy || (provider === 'gemini' && !model.trim())} className="rounded-lg bg-ui-fill-amber-600 px-4 py-2 text-sm font-semibold text-ui-on-action hover:bg-ui-fill-amber-500 disabled:opacity-50">{busy ? 'Saving…' : 'Save settings'}</button>
+        {message && <p role="status" className="text-sm text-ui-secondary">{message}</p>}
       </div>
-      <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+      <div className="rounded-xl border border-ui-line-soft bg-ui-panel p-6 space-y-5">
         <div>
-          <h3 className="text-lg font-semibold text-white">Resume formatting</h3>
-          <p className="text-sm text-slate-400 mt-1">The first resume (v001) can use multiple pages. Choose the page limit for later versions.</p>
+          <h3 className="text-lg font-semibold text-ui-heading">Resume formatting</h3>
+          <p className="text-sm text-ui-muted mt-1">The first resume (v001) can use multiple pages. Choose the page limit for later versions.</p>
         </div>
-        <label className="flex items-start gap-3 text-sm text-slate-200">
+        <label className="flex items-start gap-3 text-sm text-ui-secondary">
           <input
             type="checkbox"
             checked={requireSinglePageResume}
             disabled={resumeSettingsLoading}
             onChange={event => setRequireSinglePageResume(event.target.checked)}
-            className="mt-1 accent-amber-500"
+            className="mt-1 accent-ui-ink-amber-500"
           />
           <span>
             Require later resume versions to fit on one page
-            <span className="block text-xs text-slate-400 mt-1">
+            <span className="block text-xs text-ui-muted mt-1">
               Off by default. When off, multi-page resumes are allowed and still checked for valid PDF content.
             </span>
           </span>
         </label>
         <button onClick={saveResumeSettings} disabled={resumeSettingsBusy || resumeSettingsLoading}
-          className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50">
+          className="rounded-lg bg-ui-fill-amber-600 px-4 py-2 text-sm font-semibold text-ui-on-action hover:bg-ui-fill-amber-500 disabled:opacity-50">
           {resumeSettingsLoading ? 'Loading…' : resumeSettingsBusy ? 'Saving…' : 'Save resume settings'}
         </button>
-        {resumeSettingsMessage && <p role="status" className="text-sm text-slate-200">{resumeSettingsMessage}</p>}
+        {resumeSettingsMessage && <p role="status" className="text-sm text-ui-secondary">{resumeSettingsMessage}</p>}
       </div>
-      <p className="text-sm text-slate-500">Codex manages its own ChatGPT sign-in. DoorKnock stores your time zone, provider, model, and resume formatting preferences locally.</p>
+      <p className="text-sm text-ui-subtle">Codex manages its own ChatGPT sign-in. DoorKnock stores your time zone, provider, model, and resume formatting preferences locally.</p>
     </section>
   );
 };

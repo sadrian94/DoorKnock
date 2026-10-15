@@ -34,13 +34,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const displayDate = (value: string) => formatDate(value, settings.timezone, { month: 'short', day: 'numeric' });
   const [showAllAttention, setShowAllAttention] = useState(false);
   if (isLoading && !data) {
-    return <div className="p-12 text-center text-slate-400">Loading dashboard…</div>;
+    return <div className="p-12 text-center text-ui-muted">Loading dashboard…</div>;
   }
   if (hasError) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-12 text-slate-300">
+      <div className="max-w-7xl mx-auto px-6 py-12 text-ui-body">
         <p>Dashboard data could not be loaded.</p>
-        <button onClick={onRetry} className="mt-4 rounded-lg bg-amber-600 px-4 py-2 text-sm text-white">Try again</button>
+        <button onClick={onRetry} className="mt-4 rounded-lg bg-ui-fill-amber-600 px-4 py-2 text-sm text-ui-on-action">Try again</button>
       </div>
     );
   }
@@ -60,65 +60,65 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-7">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Dashboard</h2>
-          <p className="mt-1 text-sm text-slate-400">Application activity and items to review.</p>
+          <h2 className="text-2xl font-bold text-ui-heading">Dashboard</h2>
+          <p className="mt-1 text-sm text-ui-muted">Application activity and items to review.</p>
         </div>
         <button onClick={onRetry} disabled={isLoading}
-          className="flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-900 disabled:opacity-50">
+          className="flex items-center gap-2 rounded-lg border border-ui-line px-3 py-2 text-sm text-ui-body hover:bg-ui-panel disabled:opacity-50">
           <RefreshCw className="h-4 w-4" /> Refresh
         </button>
       </div>
 
       <section aria-label="Application overview" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => (
-          <div key={card.label} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-            <p className="text-sm text-slate-400">{card.label}</p>
-            <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{card.value}</p>
-            <p className="mt-2 text-xs text-slate-500">{card.note}</p>
+          <div key={card.label} className="rounded-2xl border border-ui-line-soft bg-ui-panel/70 p-5">
+            <p className="text-sm text-ui-muted">{card.label}</p>
+            <p className="mt-2 text-3xl font-semibold tabular-nums text-ui-heading">{card.value}</p>
+            <p className="mt-2 text-xs text-ui-subtle">{card.note}</p>
           </div>
         ))}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/70 p-5" aria-label="Weekly applications sent">
-          <h3 className="font-semibold text-white">Applications sent by week</h3>
-          <p className="mt-1 text-xs text-slate-400">Last 12 calendar weeks · based on recorded applied dates</p>
-          <div className="mt-6 flex h-52 items-end gap-2 border-b border-slate-700 pb-2" role="img"
+        <section className="min-w-0 rounded-2xl border border-ui-line-soft bg-ui-panel/70 p-5" aria-label="Weekly applications sent">
+          <h3 className="font-semibold text-ui-heading">Applications sent by week</h3>
+          <p className="mt-1 text-xs text-ui-muted">Last 12 calendar weeks · based on recorded applied dates</p>
+          <div className="mt-6 flex h-52 items-end gap-2 border-b border-ui-line pb-2" role="img"
             aria-label={data.weekly_applications.map((week) => `Week of ${week.week_start}: ${week.count}`).join('; ')}>
             {data.weekly_applications.map((week) => (
               <div key={week.week_start} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
                 title={`Week of ${week.week_start}: ${week.count} applications`}>
-                <span className="text-[10px] tabular-nums text-slate-300">{week.count || ''}</span>
-                <div className="w-full max-w-9 rounded-t bg-amber-500/85"
+                <span className="text-[10px] tabular-nums text-ui-body">{week.count || ''}</span>
+                <div className="w-full max-w-9 rounded-t bg-ui-fill-amber-500/85"
                   style={{ height: `${week.count ? Math.max(8, (week.count / weeklyMax) * 160) : 2}px` }} />
               </div>
             ))}
           </div>
           <div className="mt-2 flex gap-2">
             {data.weekly_applications.map((week, index) => (
-              <span key={week.week_start} className="min-w-0 flex-1 text-center text-[10px] text-slate-500">
+              <span key={week.week_start} className="min-w-0 flex-1 text-center text-[10px] text-ui-subtle">
                 {index % 2 === 0 ? displayDate(week.week_start) : ''}
               </span>
             ))}
           </div>
         </section>
 
-        <section className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/70 p-5" aria-label="Current pipeline stage distribution">
-          <h3 className="font-semibold text-white">Current pipeline stages</h3>
-          <p className="mt-1 text-xs text-slate-400">Snapshot of current records; stages are not a conversion funnel</p>
+        <section className="min-w-0 rounded-2xl border border-ui-line-soft bg-ui-panel/70 p-5" aria-label="Current pipeline stage distribution">
+          <h3 className="font-semibold text-ui-heading">Current pipeline stages</h3>
+          <p className="mt-1 text-xs text-ui-muted">Snapshot of current records; stages are not a conversion funnel</p>
           {visibleStages.length === 0 ? (
-            <p className="mt-8 text-sm text-slate-500">No applications recorded yet.</p>
+            <p className="mt-8 text-sm text-ui-subtle">No applications recorded yet.</p>
           ) : (
             <div className="mt-6 space-y-3">
               {visibleStages.map(([key, label]) => {
                 const count = data.stage_counts[key] || 0;
                 return (
                   <div key={key} className="grid grid-cols-[minmax(110px,155px)_1fr_2rem] items-center gap-3 text-xs">
-                    <span className="truncate text-slate-300" title={label}>{label}</span>
-                    <div className="h-3 rounded-full bg-slate-800">
-                      <div className="h-3 rounded-full bg-amber-500/80" style={{ width: `${(count / stageMax) * 100}%` }} />
+                    <span className="truncate text-ui-body" title={label}>{label}</span>
+                    <div className="h-3 rounded-full bg-ui-raised">
+                      <div className="h-3 rounded-full bg-ui-fill-amber-500/80" style={{ width: `${(count / stageMax) * 100}%` }} />
                     </div>
-                    <span className="text-right tabular-nums text-slate-300">{count}</span>
+                    <span className="text-right tabular-nums text-ui-body">{count}</span>
                   </div>
                 );
               })}
@@ -127,26 +127,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </section>
       </div>
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+      <section className="rounded-2xl border border-ui-line-soft bg-ui-panel/70 p-5">
         <div className="flex items-center gap-2">
-          <CalendarClock className="h-5 w-5 text-amber-400" />
-          <h3 className="font-semibold text-white">Next actions</h3>
+          <CalendarClock className="h-5 w-5 text-ui-ink-amber-400" />
+          <h3 className="font-semibold text-ui-heading">Next actions</h3>
         </div>
-        <p className="mt-1 text-xs text-slate-400">Weekdays only · employer timelines take priority · pausing reminders keeps your application stage.</p>
+        <p className="mt-1 text-xs text-ui-muted">Weekdays only · employer timelines take priority · pausing reminders keeps your application stage.</p>
         {data.attention_items.length === 0 ? (
-          <p className="mt-5 text-sm text-slate-500">No next actions due. Paused applications remain in your pipeline.</p>
+          <p className="mt-5 text-sm text-ui-subtle">No next actions due. Paused applications remain in your pipeline.</p>
         ) : (
-          <div className="mt-4 divide-y divide-slate-800">
+          <div className="mt-4 divide-y divide-ui-line-soft">
             {(showAllAttention ? data.attention_items : data.attention_items.slice(0, 8)).map((item) => (
               <div key={item.application_id}><button onClick={() => onSelectJob(item.job_id)}
-                className="flex w-full items-center justify-between gap-4 py-3 text-left hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500">
+                className="flex w-full items-center justify-between gap-4 py-3 text-left hover:text-ui-heading focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ink-amber-500">
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-slate-200">{item.title}</span>
-                  <span className="block truncate text-xs text-slate-500">{item.company}</span>
-                  <span className="mt-1 block text-xs text-slate-400">{item.reason}</span>
-                  <span className="block text-[11px] text-slate-500">Based on: {item.basis}</span>
+                  <span className="block truncate text-sm font-medium text-ui-secondary">{item.title}</span>
+                  <span className="block truncate text-xs text-ui-subtle">{item.company}</span>
+                  <span className="mt-1 block text-xs text-ui-muted">{item.reason}</span>
+                  <span className="block text-[11px] text-ui-subtle">Based on: {item.basis}</span>
                 </span>
-                <span className="flex shrink-0 items-center gap-3 text-xs text-slate-400">
+                <span className="flex shrink-0 items-center gap-3 text-xs text-ui-muted">
                   <span className="max-w-44 text-right">{item.label}
                     <span className="block">{item.date ? displayDate(item.date) : 'Confirm details'}</span>
                     {item.due_date && <span className="block">{item.kind === 'interview' ? 'Interview' : 'Deadline'} {displayDate(item.due_date)}</span>}
@@ -161,7 +161,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         )}
         {data.attention_items.length > 8 && (
           <button onClick={() => setShowAllAttention(!showAllAttention)}
-            className="mt-4 text-sm font-medium text-amber-400 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500">
+            className="mt-4 text-sm font-medium text-ui-ink-amber-400 hover:text-ui-ink-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ink-amber-500">
             {showAllAttention ? 'Show fewer' : `Show all ${data.attention_items.length} items`}
           </button>
         )}

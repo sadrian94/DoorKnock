@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "test:progress": "node --test src/progressDefaults.test.mjs",
+    "test:appearance": "node --test tests/appearance.test.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"

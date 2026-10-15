@@ -303,17 +303,17 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
   const hasDealbreakers = detectedDealbreakers.length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ui-overlay/80 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-ui-panel border border-ui-line rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="p-5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
+        <div className="p-5 border-b border-ui-line-soft bg-ui-page/80 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <div className="h-8 w-8 rounded-lg bg-ui-fill-amber-500/20 border border-ui-line-amber-500/30 flex items-center justify-center text-ui-ink-amber-400">
               <Sparkles className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Import & Analyze Job</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-base font-bold text-ui-heading">Import & Analyze Job</h2>
+              <p className="text-xs text-ui-muted">
                 Provide a Job URL or paste raw JD text, then analyze fit against your Master Resume.
               </p>
             </div>
@@ -321,7 +321,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
 
           <button
             onClick={handleClose}
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
+            className="text-ui-muted hover:text-ui-heading p-1.5 rounded-lg hover:bg-ui-raised transition"
           >
             <X className="h-5 w-5" />
           </button>
@@ -329,18 +329,18 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
 
         {/* Global Error Banner */}
         {errorMsg && (
-          <div className="mx-6 mt-4 bg-red-950/40 border border-red-800/60 rounded-xl p-3 flex items-start justify-between gap-2 text-xs text-red-300 animate-fadeIn">
+          <div className="mx-6 mt-4 bg-ui-fill-red-950/40 border border-ui-line-red-800/60 rounded-xl p-3 flex items-start justify-between gap-2 text-xs text-ui-ink-red-300 animate-fadeIn">
             <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="h-4 w-4 text-ui-ink-red-400 flex-shrink-0 mt-0.5" />
               <div className="space-y-0.5">
                 <span className="font-semibold">Notice:</span>
-                <p className="text-slate-300">{errorMsg}</p>
+                <p className="text-ui-body">{errorMsg}</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setErrorMsg(null)}
-              className="text-slate-400 hover:text-white p-0.5 rounded transition"
+              className="text-ui-muted hover:text-ui-heading p-0.5 rounded transition"
               aria-label="Dismiss error"
             >
               <X className="h-3.5 w-3.5" />
@@ -352,9 +352,9 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
         {!analysis && (
           <div className="p-6 overflow-y-auto flex-1 space-y-5">
             {/* 1. Job URL & Fetch Button */}
-            <div className="space-y-1.5 bg-slate-950/70 p-4 rounded-xl border border-slate-800">
-              <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                <Globe className="h-3.5 w-3.5 text-amber-500" />
+            <div className="space-y-1.5 bg-ui-page/70 p-4 rounded-xl border border-ui-line-soft">
+              <label className="text-xs font-semibold text-ui-body flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5 text-ui-ink-amber-500" />
                 <span>Job Posting URL (Optional)</span>
               </label>
               <div className="flex gap-2">
@@ -363,20 +363,20 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                   placeholder="https://www.linkedin.com/jobs/view/... or Greenhouse/careers page"
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
-                  className="flex-1 bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3.5 py-2 focus:outline-none focus:border-amber-500"
+                  className="flex-1 bg-ui-panel border border-ui-line text-ui-secondary text-xs rounded-xl px-3.5 py-2 focus:outline-none focus:border-ui-line-amber-500"
                 />
                 <button
                   type="button"
                   onClick={handleFetchUrl}
                   disabled={isFetchingUrl || !urlInput.trim()}
-                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded-xl transition disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-ui-raised hover:bg-ui-hover text-ui-ink-amber-400 border border-ui-line rounded-xl transition disabled:opacity-50"
                   title="Extract JD text from this webpage"
                 >
-                  <DownloadCloud className={`h-3.5 w-3.5 ${isFetchingUrl ? 'animate-bounce text-amber-400' : ''}`} />
+                  <DownloadCloud className={`h-3.5 w-3.5 ${isFetchingUrl ? 'animate-bounce text-ui-ink-amber-400' : ''}`} />
                   <span>{isFetchingUrl ? 'Fetching...' : 'Fetch JD'}</span>
                 </button>
               </div>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-ui-subtle">
                 Click "Fetch JD" to automatically crawl the link and populate the description below.
               </p>
             </div>
@@ -384,11 +384,11 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
             {/* 2. Job Description Textarea */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-slate-300">
-                  Job Description Text <span className="text-red-400">*</span>
+                <label className="text-xs font-semibold text-ui-body">
+                  Job Description Text <span className="text-ui-ink-red-400">*</span>
                 </label>
                 {textInput && (
-                  <span className="text-[11px] text-slate-500">
+                  <span className="text-[11px] text-ui-subtle">
                     {textInput.length} chars
                   </span>
                 )}
@@ -398,53 +398,53 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                 placeholder="Paste the full job description here (or click 'Fetch JD' above)..."
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-xl p-3.5 focus:outline-none focus:border-amber-500 font-mono resize-none leading-relaxed"
+                className="w-full bg-ui-page border border-ui-line text-ui-secondary text-xs rounded-xl p-3.5 focus:outline-none focus:border-ui-line-amber-500 font-mono resize-none leading-relaxed"
               />
             </div>
 
             {/* Direct Import Form (Expandable) */}
-            <div className="border-t border-slate-800 pt-3">
+            <div className="border-t border-ui-line-soft pt-3">
               <button
                 type="button"
                 onClick={() => setShowDirectImport(!showDirectImport)}
-                className="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1.5 transition"
+                className="text-xs text-ui-ink-amber-400 hover:text-ui-ink-amber-300 font-medium flex items-center gap-1.5 transition"
               >
                 <FilePlus className="h-3.5 w-3.5" />
                 <span>{showDirectImport ? 'Hide Direct Import Options' : 'Need to skip AI? Import directly with manual details →'}</span>
               </button>
 
               {showDirectImport && (
-                <div className="mt-3 p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3 animate-fadeIn">
+                <div className="mt-3 p-4 bg-ui-page/70 border border-ui-line-soft rounded-xl space-y-3 animate-fadeIn">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                        Job Title <span className="text-red-400">*</span>
+                      <label className="text-[11px] font-semibold text-ui-body block mb-1">
+                        Job Title <span className="text-ui-ink-red-400">*</span>
                       </label>
                       <input
                         type="text"
                         placeholder="e.g. Senior Software Engineer"
                         value={directTitle}
                         onChange={(e) => setDirectTitle(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-500"
+                        className="w-full bg-ui-panel border border-ui-line text-ui-secondary text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-ui-line-amber-500"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                        Company Name <span className="text-red-400">*</span>
+                      <label className="text-[11px] font-semibold text-ui-body block mb-1">
+                        Company Name <span className="text-ui-ink-red-400">*</span>
                       </label>
                       <input
                         type="text"
                         placeholder="e.g. Acme Corp"
                         value={directCompany}
                         onChange={(e) => setDirectCompany(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-500"
+                        className="w-full bg-ui-panel border border-ui-line text-ui-secondary text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-ui-line-amber-500"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      <label className="text-[11px] font-semibold text-ui-body block mb-1">
                         Location (Optional)
                       </label>
                       <input
@@ -452,17 +452,17 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                         placeholder="e.g. San Francisco, CA or Remote"
                         value={directLocation}
                         onChange={(e) => setDirectLocation(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-500"
+                        className="w-full bg-ui-panel border border-ui-line text-ui-secondary text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-ui-line-amber-500"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      <label className="text-[11px] font-semibold text-ui-body block mb-1">
                         Workplace Type
                       </label>
                       <select
                         value={directWorkplace}
                         onChange={(e) => setDirectWorkplace(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-500"
+                        className="w-full bg-ui-panel border border-ui-line text-ui-secondary text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-ui-line-amber-500"
                       >
                         <option value="onsite">Onsite</option>
                         <option value="hybrid">Hybrid</option>
@@ -476,9 +476,9 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                       type="button"
                       onClick={handleDirectImport}
                       disabled={isSaving || !directTitle.trim() || !directCompany.trim()}
-                      className="px-3.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition disabled:opacity-50 flex items-center gap-1.5"
+                      className="px-3.5 py-1.5 text-xs font-semibold bg-ui-raised hover:bg-ui-hover text-ui-secondary border border-ui-line rounded-lg transition disabled:opacity-50 flex items-center gap-1.5"
                     >
-                      <Check className="h-3.5 w-3.5 text-emerald-400" />
+                      <Check className="h-3.5 w-3.5 text-ui-ink-emerald-400" />
                       <span>{isSaving ? 'Importing...' : 'Save Job Directly'}</span>
                     </button>
                   </div>
@@ -488,8 +488,8 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
 
             {/* Success Feedback */}
             {successMsg && (
-              <div className="bg-emerald-950/40 border border-emerald-800/60 rounded-xl p-2.5 flex items-center gap-2 text-xs text-emerald-300">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+              <div className="bg-ui-fill-emerald-950/40 border border-ui-line-emerald-800/60 rounded-xl p-2.5 flex items-center gap-2 text-xs text-ui-ink-emerald-300">
+                <CheckCircle2 className="h-4 w-4 text-ui-ink-emerald-400 flex-shrink-0" />
                 <span>{successMsg}</span>
               </div>
             )}
@@ -500,30 +500,30 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
         {analysis && (
           <div className="p-6 overflow-y-auto flex-1 space-y-5">
             {/* Header Card with Editable Metadata */}
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
+            <div className="bg-ui-page p-4 rounded-xl border border-ui-line-soft flex flex-col gap-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
                   {!isEditingMeta ? (
                     <div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 mb-1">
-                        <Building2 className="h-3.5 w-3.5 text-amber-500" />
-                        <span className="font-semibold text-slate-200">{editedMeta.company || analysis.company}</span>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-ui-muted mb-1">
+                        <Building2 className="h-3.5 w-3.5 text-ui-ink-amber-500" />
+                        <span className="font-semibold text-ui-secondary">{editedMeta.company || analysis.company}</span>
                         {(editedMeta.location || analysis.location) && (
                           <span className="flex items-center gap-1">
                             • <MapPin className="h-3 w-3" /> {editedMeta.location || analysis.location}
                           </span>
                         )}
                         {(editedMeta.workplace_type || analysis.workplace_type) && (
-                          <span className="capitalize px-1.5 py-0.5 bg-slate-800 rounded text-[11px]">
+                          <span className="capitalize px-1.5 py-0.5 bg-ui-raised rounded text-[11px]">
                             {editedMeta.workplace_type || analysis.workplace_type}
                           </span>
                         )}
                       </div>
 
-                      <h3 className="text-lg font-bold text-white">{editedMeta.title || analysis.title}</h3>
+                      <h3 className="text-lg font-bold text-ui-heading">{editedMeta.title || analysis.title}</h3>
 
                       {(editedMeta.salary_min || analysis.salary_min) && (
-                        <p className="text-xs text-amber-400 font-medium mt-1 flex items-center gap-1">
+                        <p className="text-xs text-ui-ink-amber-400 font-medium mt-1 flex items-center gap-1">
                           <DollarSign className="h-3 w-3" />
                           ${Number(editedMeta.salary_min || analysis.salary_min).toLocaleString()}
                           {(editedMeta.salary_max || analysis.salary_max)
@@ -535,45 +535,45 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                     </div>
                   ) : (
                     /* Inline Metadata Edit Form */
-                    <div className="space-y-3 bg-slate-900/90 p-3.5 rounded-xl border border-slate-700">
-                      <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5 mb-1">
+                    <div className="space-y-3 bg-ui-panel/90 p-3.5 rounded-xl border border-ui-line">
+                      <div className="text-xs font-bold text-ui-ink-amber-400 flex items-center gap-1.5 mb-1">
                         <Edit3 className="h-3.5 w-3.5" />
                         <span>Edit Extracted Job Metadata</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
-                          <label className="text-[11px] text-slate-400 block mb-1">Job Title</label>
+                          <label className="text-[11px] text-ui-muted block mb-1">Job Title</label>
                           <input
                             type="text"
                             value={editedMeta.title}
                             onChange={(e) => setEditedMeta({ ...editedMeta, title: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500"
+                            className="w-full bg-ui-page border border-ui-line text-ui-secondary text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-ui-line-amber-500"
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] text-slate-400 block mb-1">Company</label>
+                          <label className="text-[11px] text-ui-muted block mb-1">Company</label>
                           <input
                             type="text"
                             value={editedMeta.company}
                             onChange={(e) => setEditedMeta({ ...editedMeta, company: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500"
+                            className="w-full bg-ui-page border border-ui-line text-ui-secondary text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-ui-line-amber-500"
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] text-slate-400 block mb-1">Location</label>
+                          <label className="text-[11px] text-ui-muted block mb-1">Location</label>
                           <input
                             type="text"
                             value={editedMeta.location}
                             onChange={(e) => setEditedMeta({ ...editedMeta, location: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500"
+                            className="w-full bg-ui-page border border-ui-line text-ui-secondary text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-ui-line-amber-500"
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] text-slate-400 block mb-1">Workplace</label>
+                          <label className="text-[11px] text-ui-muted block mb-1">Workplace</label>
                           <select
                             value={editedMeta.workplace_type}
                             onChange={(e) => setEditedMeta({ ...editedMeta, workplace_type: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500"
+                            className="w-full bg-ui-page border border-ui-line text-ui-secondary text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-ui-line-amber-500"
                           >
                             <option value="onsite">Onsite</option>
                             <option value="hybrid">Hybrid</option>
@@ -581,21 +581,21 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                           </select>
                         </div>
                         <div>
-                          <label className="text-[11px] text-slate-400 block mb-1">Min Salary ($)</label>
+                          <label className="text-[11px] text-ui-muted block mb-1">Min Salary ($)</label>
                           <input
                             type="number"
                             value={editedMeta.salary_min}
                             onChange={(e) => setEditedMeta({ ...editedMeta, salary_min: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500"
+                            className="w-full bg-ui-page border border-ui-line text-ui-secondary text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-ui-line-amber-500"
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] text-slate-400 block mb-1">Max Salary ($)</label>
+                          <label className="text-[11px] text-ui-muted block mb-1">Max Salary ($)</label>
                           <input
                             type="number"
                             value={editedMeta.salary_max}
                             onChange={(e) => setEditedMeta({ ...editedMeta, salary_max: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500"
+                            className="w-full bg-ui-page border border-ui-line text-ui-secondary text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-ui-line-amber-500"
                           />
                         </div>
                       </div>
@@ -607,17 +607,17 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsEditingMeta(!isEditingMeta)}
-                    className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:text-amber-300 hover:border-amber-500/50 transition cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg border border-ui-line bg-ui-panel text-ui-body hover:text-ui-ink-amber-300 hover:border-ui-line-amber-500/50 transition cursor-pointer"
                     title={isEditingMeta ? 'Done editing metadata' : 'Edit extracted metadata'}
                   >
                     {isEditingMeta ? (
                       <>
-                        <Check className="h-3 w-3 text-emerald-400" />
+                        <Check className="h-3 w-3 text-ui-ink-emerald-400" />
                         <span>Done</span>
                       </>
                     ) : (
                       <>
-                        <Edit3 className="h-3 w-3 text-slate-400" />
+                        <Edit3 className="h-3 w-3 text-ui-muted" />
                         <span>Edit Details</span>
                       </>
                     )}
@@ -626,23 +626,23 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                   {analysis.triage ? (
                     <div className={`px-3 py-1.5 rounded-xl border text-center ${
                       analysis.triage.decision === 'STRONG_KNOCK'
-                        ? 'bg-emerald-950/60 border-emerald-700 text-emerald-400'
+                        ? 'bg-ui-fill-emerald-950/60 border-ui-line-emerald-700 text-ui-ink-emerald-400'
                         : analysis.triage.decision === 'SELECTIVE_APPLY'
-                        ? 'bg-blue-950/60 border-blue-700 text-blue-400'
+                        ? 'bg-ui-fill-blue-950/60 border-ui-line-blue-700 text-ui-ink-blue-400'
                         : analysis.triage.decision === 'HARD_PASS'
-                        ? 'bg-red-950/60 border-red-700 text-red-400'
-                        : 'bg-amber-950/60 border-amber-700 text-amber-400'
+                        ? 'bg-ui-fill-red-950/60 border-ui-line-red-700 text-ui-ink-red-400'
+                        : 'bg-ui-fill-amber-950/60 border-ui-line-amber-700 text-ui-ink-amber-400'
                     }`}>
                       <span className="block text-xs font-black uppercase tracking-wider">{analysis.triage.decision.replace('_', ' ')}</span>
-                      <span className="text-[10px] text-slate-400">Triage Recommendation</span>
+                      <span className="text-[10px] text-ui-muted">Triage Recommendation</span>
                     </div>
                   ) : score !== null && (
                     <div className={`px-4 py-2 rounded-xl border text-center ${
                       score >= 85
-                        ? 'bg-emerald-950/60 border-emerald-700 text-emerald-400'
+                        ? 'bg-ui-fill-emerald-950/60 border-ui-line-emerald-700 text-ui-ink-emerald-400'
                         : score >= 70
-                        ? 'bg-amber-950/60 border-amber-700 text-amber-400'
-                        : 'bg-slate-800 border-slate-700 text-slate-300'
+                        ? 'bg-ui-fill-amber-950/60 border-ui-line-amber-700 text-ui-ink-amber-400'
+                        : 'bg-ui-raised border-ui-line text-ui-body'
                     }`}>
                       <span className="block text-2xl font-black">{score}%</span>
                       <span className="text-[10px] font-semibold uppercase tracking-wider">Overall Fit</span>
@@ -656,31 +656,31 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
             {analysis.triage ? (
               <div className="space-y-3">
                 {/* Strategic Thesis & Dealbreaker Audit */}
-                <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2">
-                  <div className="text-xs text-slate-200 leading-relaxed">
-                    <span className="text-amber-400 font-semibold">Strategic Rationale: </span>
+                <div className="bg-ui-page/80 p-3.5 rounded-xl border border-ui-line-soft space-y-2">
+                  <div className="text-xs text-ui-secondary leading-relaxed">
+                    <span className="text-ui-ink-amber-400 font-semibold">Strategic Rationale: </span>
                     {analysis.triage.strategic_thesis}
                   </div>
-                  <div className="text-[11px] text-slate-400 pt-1.5 border-t border-slate-800 flex items-center justify-between">
+                  <div className="text-[11px] text-ui-muted pt-1.5 border-t border-ui-line-soft flex items-center justify-between">
                     <span>Dealbreaker Audit:</span>
                     {hasDealbreakers ? (
-                      <span className="text-rose-400 font-semibold flex items-center gap-1">
+                      <span className="text-ui-ink-rose-400 font-semibold flex items-center gap-1">
                         <span>⚠️</span>
                         <span>{detectedDealbreakers.join(', ')}</span>
                       </span>
                     ) : (
-                      <span className="text-emerald-400 font-medium">✓ None detected</span>
+                      <span className="text-ui-ink-emerald-400 font-medium">✓ None detected</span>
                     )}
                   </div>
                 </div>
 
                 {/* Acute Friction & Value Hook */}
                 {analysis.employer_mandate && (
-                  <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                  <div className="bg-ui-page/80 p-3.5 rounded-xl border border-ui-line-soft space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Acute Employer Bottlenecks</span>
+                      <span className="text-[11px] font-bold text-ui-ink-amber-400 uppercase tracking-wider">Acute Employer Bottlenecks</span>
                       {analysis.employer_mandate.role_archetype && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-ui-fill-blue-500/20 text-ui-ink-blue-300 border border-ui-line-blue-500/30">
                           Role: {analysis.employer_mandate.role_archetype}
                         </span>
                       )}
@@ -688,16 +688,16 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                     {analysis.employer_mandate.acute_operational_frictions?.length > 0 && (
                       <ul className="space-y-1">
                         {analysis.employer_mandate.acute_operational_frictions.map((f, i) => (
-                          <li key={i} className="text-xs text-slate-300 bg-slate-900/80 p-2 rounded-lg border border-slate-800/80 flex items-start gap-2">
-                            <span className="text-amber-500">🔥</span>
+                          <li key={i} className="text-xs text-ui-body bg-ui-panel/80 p-2 rounded-lg border border-ui-line-soft/80 flex items-start gap-2">
+                            <span className="text-ui-ink-amber-500">🔥</span>
                             <span>{f}</span>
                           </li>
                         ))}
                       </ul>
                     )}
                     {analysis.employer_mandate.immediate_value_hook && (
-                      <div className="text-xs text-slate-300 bg-amber-950/20 p-2.5 rounded-lg border border-amber-900/30">
-                        <span className="text-amber-300 font-bold">Day-1 Antidote: </span>
+                      <div className="text-xs text-ui-body bg-ui-fill-amber-950/20 p-2.5 rounded-lg border border-ui-line-amber-900/30">
+                        <span className="text-ui-ink-amber-300 font-bold">Day-1 Antidote: </span>
                         {analysis.employer_mandate.immediate_value_hook}
                       </div>
                     )}
@@ -706,24 +706,24 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
 
                 {/* Gaps & Strategic Defense */}
                 {analysis.gaps_and_mitigation && analysis.gaps_and_mitigation.length > 0 && (
-                  <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                  <div className="bg-ui-page/80 p-3.5 rounded-xl border border-ui-line-soft space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Gaps & Strategic Defense</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                      <span className="text-[11px] font-bold text-ui-muted uppercase tracking-wider">Gaps & Strategic Defense</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-ui-fill-amber-500/10 text-ui-ink-amber-300 border border-ui-line-amber-500/30">
                         Risk Audit
                       </span>
                     </div>
                     <div className="space-y-1.5">
                       {analysis.gaps_and_mitigation.map((g, i) => (
-                        <div key={i} className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 text-xs space-y-1">
+                        <div key={i} className="bg-ui-panel/80 p-2.5 rounded-lg border border-ui-line-soft text-xs space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-amber-400 flex items-center gap-1">
+                            <span className="font-bold text-ui-ink-amber-400 flex items-center gap-1">
                               <span>▲ Gap:</span> <span>{g.gap}</span>
                             </span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800">{g.severity}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-ui-page text-ui-muted border border-ui-line-soft">{g.severity}</span>
                           </div>
-                          <div className="text-slate-300 text-[11px] bg-slate-950/60 p-2 rounded border border-slate-800/80 leading-relaxed">
-                            <span className="text-emerald-400 font-semibold">🛡️ Defense: </span>
+                          <div className="text-ui-body text-[11px] bg-ui-page/60 p-2 rounded border border-ui-line-soft/80 leading-relaxed">
+                            <span className="text-ui-ink-emerald-400 font-semibold">🛡️ Defense: </span>
                             {g.compensating_evidence}
                           </div>
                         </div>
@@ -736,37 +736,37 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
               /* Legacy Fallback Presentation */
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-center">
-                    <span className="text-[11px] text-slate-400 block mb-1">Technical Stack</span>
-                    <span className="text-sm font-bold text-amber-400">{analysis.technical_fit_score || score || 85}%</span>
+                  <div className="bg-ui-page/80 p-3 rounded-xl border border-ui-line-soft text-center">
+                    <span className="text-[11px] text-ui-muted block mb-1">Technical Stack</span>
+                    <span className="text-sm font-bold text-ui-ink-amber-400">{analysis.technical_fit_score || score || 85}%</span>
                   </div>
-                  <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-center">
-                    <span className="text-[11px] text-slate-400 block mb-1">Domain & Scope</span>
-                    <span className="text-sm font-bold text-amber-400">{analysis.domain_fit_score || score || 90}%</span>
+                  <div className="bg-ui-page/80 p-3 rounded-xl border border-ui-line-soft text-center">
+                    <span className="text-[11px] text-ui-muted block mb-1">Domain & Scope</span>
+                    <span className="text-sm font-bold text-ui-ink-amber-400">{analysis.domain_fit_score || score || 90}%</span>
                   </div>
-                  <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-center">
-                    <span className="text-[11px] text-slate-400 block mb-1">Work Eligibility</span>
-                    <span className="text-sm font-bold text-emerald-400">{analysis.eligibility_fit_score || 100}%</span>
+                  <div className="bg-ui-page/80 p-3 rounded-xl border border-ui-line-soft text-center">
+                    <span className="text-[11px] text-ui-muted block mb-1">Work Eligibility</span>
+                    <span className="text-sm font-bold text-ui-ink-emerald-400">{analysis.eligibility_fit_score || 100}%</span>
                   </div>
                 </div>
 
                 {analysis.suitability_reason && (
-                  <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
-                    <span className="text-xs font-bold text-amber-400 block mb-1">Fit Verdict & Trade-offs:</span>
-                    <p className="text-xs text-slate-300 leading-relaxed">{analysis.suitability_reason}</p>
+                  <div className="bg-ui-page/60 p-3.5 rounded-xl border border-ui-line-soft">
+                    <span className="text-xs font-bold text-ui-ink-amber-400 block mb-1">Fit Verdict & Trade-offs:</span>
+                    <p className="text-xs text-ui-body leading-relaxed">{analysis.suitability_reason}</p>
                   </div>
                 )}
 
                 {analysis.employer_pain_points && analysis.employer_pain_points.length > 0 && (
                   <div className="space-y-1.5">
-                    <span className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1">
+                    <span className="text-xs font-bold text-ui-ink-red-400 uppercase tracking-wider flex items-center gap-1">
                       <ShieldAlert className="h-3.5 w-3.5" />
                       Target Employer Pain Points (Outreach Hooks)
                     </span>
                     <ul className="space-y-1">
                       {analysis.employer_pain_points.map((pp, i) => (
-                        <li key={i} className="text-xs text-slate-300 bg-slate-950/80 p-2 rounded-lg border border-slate-800/80 flex items-start gap-2">
-                          <span className="text-amber-500 font-bold">•</span>
+                        <li key={i} className="text-xs text-ui-body bg-ui-page/80 p-2 rounded-lg border border-ui-line-soft/80 flex items-start gap-2">
+                          <span className="text-ui-ink-amber-500 font-bold">•</span>
                           <span>{pp}</span>
                         </li>
                       ))}
@@ -776,14 +776,14 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
 
                 {analysis.key_strengths && analysis.key_strengths.length > 0 && (
                   <div className="space-y-1.5">
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                    <span className="text-xs font-bold text-ui-ink-emerald-400 uppercase tracking-wider flex items-center gap-1">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       Matched Candidate Evidence
                     </span>
                     <ul className="space-y-1">
                       {analysis.key_strengths.map((str, i) => (
-                        <li key={i} className="text-xs text-slate-300 bg-slate-950/80 p-2 rounded-lg border border-slate-800/80 flex items-start gap-2">
-                          <span className="text-emerald-500 font-bold">✓</span>
+                        <li key={i} className="text-xs text-ui-body bg-ui-page/80 p-2 rounded-lg border border-ui-line-soft/80 flex items-start gap-2">
+                          <span className="text-ui-ink-emerald-500 font-bold">✓</span>
                           <span>{str}</span>
                         </li>
                       ))}
@@ -796,12 +796,12 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
         )}
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between">
+        <div className="p-4 border-t border-ui-line-soft bg-ui-page/80 flex items-center justify-between">
           <div>
             {analysis && (
               <button
                 onClick={() => setAnalysis(null)}
-                className="text-xs text-slate-400 hover:text-white px-2 py-1 transition cursor-pointer"
+                className="text-xs text-ui-muted hover:text-ui-heading px-2 py-1 transition cursor-pointer"
               >
                 ← Back to Input
               </button>
@@ -811,7 +811,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-lg transition cursor-pointer"
+              className="px-4 py-2 text-xs font-medium text-ui-muted hover:text-ui-heading rounded-lg transition cursor-pointer"
             >
               Cancel
             </button>
@@ -820,7 +820,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
               <button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing || textInput.trim().length < 30}
-                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white rounded-xl shadow-lg shadow-amber-950/50 transition disabled:opacity-50 cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-ui-fill-amber-600 hover:bg-ui-fill-amber-500 text-ui-on-action rounded-xl shadow-lg shadow-amber-950/50 transition disabled:opacity-50 cursor-pointer"
               >
                 <Sparkles className={`h-3.5 w-3.5 ${isAnalyzing ? 'animate-spin' : ''}`} />
                 <span>{isAnalyzing ? 'Analyzing Match...' : 'Analyze Match'}</span>
@@ -829,7 +829,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
               <button
                 onClick={handleSaveToDoorKnock}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-950/50 transition disabled:opacity-50 cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-ui-fill-emerald-600 hover:bg-ui-fill-emerald-500 text-ui-on-color rounded-xl shadow-lg shadow-emerald-950/50 transition disabled:opacity-50 cursor-pointer"
               >
                 <span>{isSaving ? 'Saving...' : 'Save to DoorKnock'}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
