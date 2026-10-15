@@ -25,7 +25,9 @@ const STAGES = [['saved','Saved'], ['applied','Applied'], ['knocked','Contacted'
 
 const DIRECT_ACTIONS = ['followup', 'status_check', 'thank_you', 'assessment', 'interview_review'];
 
-export function NextActionPanel({ action, currentStage, onRecorded, compact = false }: { action: NextAction; currentStage: string; onRecorded: () => void | Promise<void>; compact?: boolean }) {
+export type RecordedProgress = { applicationId: string; eventId?: string; eventType: string };
+
+export function NextActionPanel({ action, currentStage, onRecorded, onSaved, onBusyChange, onReviewChange, compact = false, advance = false, disabled = false }: { action: NextAction; currentStage: string; onRecorded: (progress?: RecordedProgress) => void | Promise<void>; onSaved?: (progress: RecordedProgress) => void; onBusyChange?: (busy: boolean) => void; onReviewChange?: (review: boolean) => void; compact?: boolean; advance?: boolean; disabled?: boolean }) {
   const { settings } = useTimeSettings();
   const [open, setOpen] = useState(false);
   const [reviewAction, setReviewAction] = useState<NextAction | null>(null);
@@ -47,6 +49,7 @@ export function NextActionPanel({ action, currentStage, onRecorded, compact = fa
   const [outcome, setOutcome] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [pendingProgress, setPendingProgress] = useState<RecordedProgress>();
   const needsDeadline = ['interview_scheduled', 'assessment_assigned', 'reminder_set', 'cadence_resumed'].includes(event) || (event === 'stage_updated' && (stage === 'assessment' || ROUNDS.some(([key]) => key === stage)));
   const hasExpected = ['message_received', 'interview_completed', 'assessment_submitted'].includes(event);
   const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -57,6 +60,9 @@ export function NextActionPanel({ action, currentStage, onRecorded, compact = fa
   const statusChecks = shownAction.status_check_count || 0;
   const needsStatusReview = !!shownAction.status_review_required && statusChecks > dismissedChecks;
   const needsReview = needsPostponementReview || needsStatusReview;
+
+  useEffect(() => { onBusyChange?.(busy); return () => onBusyChange?.(false); }, [busy, onBusyChange]);
+  useEffect(() => { onReviewChange?.(!!reviewAction); return () => onReviewChange?.(false); }, [reviewAction, onReviewChange]);
 
   useEffect(() => {
     setReviewAction(null);
@@ -98,6 +104,9 @@ export function NextActionPanel({ action, currentStage, onRecorded, compact = fa
       });
       const result = await response.json();
       if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Check the event and dates.');
+      const progress = { applicationId, eventId: result.recorded_event_id, eventType: event };
+      setPendingProgress(progress);
+      onSaved?.(progress);
       if ((event === 'reminder_set' && fromLater && result.postponement_count >= 2
            && !['closed', 'paused'].includes(result.state))
           || (event === 'status_checked' && result.status_review_required)) {
@@ -107,7 +116,7 @@ export function NextActionPanel({ action, currentStage, onRecorded, compact = fa
         setOpen(false);
         return;
       }
-      await onRecorded();
+      await onRecorded(progress);
       setReviewAction(null);
       setOpen(false);
       setExpected('');
@@ -120,7 +129,7 @@ export function NextActionPanel({ action, currentStage, onRecorded, compact = fa
   async function keepWaiting() {
     setBusy(true); setError('');
     try {
-      await onRecorded();
+      await onRecorded(pendingProgress);
       setDismissedCount(postponements);
       setDismissedChecks(statusChecks);
       setReviewAction(null);
@@ -139,12 +148,13 @@ export function NextActionPanel({ action, currentStage, onRecorded, compact = fa
           </p>
           {action.due_date && <p className="mt-1 text-xs text-ui-body">{action.kind === 'interview' ? 'Interview' : 'Deadline'}: {displayDate(action.due_date)}</p>}
           <p className="mt-1 text-xs text-ui-muted">{shownAction.reason}</p>
-          <details className="mt-1 text-[11px] text-ui-subtle"><summary className="cursor-pointer">Why this date?</summary><p>Based on: {shownAction.basis || 'Current stage'} · {shownAction.followup_count}/2 status follow-ups · Later used {postponements} {postponements === 1 ? 'time' : 'times'} since last progress · {statusChecks} status checks since last substantive progress · dates use weekdays (Mon–Fri)</p></details>
+          <details className="mt-1 text-[0.6875rem] text-ui-subtle"><summary className="cursor-pointer">Why this date?</summary><p>Based on: {shownAction.basis || 'Current stage'} · {shownAction.followup_count}/2 status follow-ups · Later used {postponements} {postponements === 1 ? 'time' : 'times'} since last progress · {statusChecks} status checks since last substantive progress · dates use weekdays (Mon–Fri)</p></details>
         </div>}
         <div className="flex flex-wrap gap-2">
-        {shortcut && <button disabled={busy} onClick={() => start(shortcut[0], true)} className="rounded-lg bg-ui-fill-amber-600 px-3 py-2 text-xs font-semibold text-ui-on-action">{shortcut[1]}</button>}
-        {shownAction.state !== 'closed' && <button disabled={busy} onClick={() => start(shownAction.state === 'paused' ? 'cadence_resumed' : 'reminder_set', true)} className="rounded-lg border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary">{shownAction.state === 'paused' ? 'Resume' : 'Later'}</button>}
-        <button disabled={busy} onClick={() => open ? setOpen(false) : start(suggestedEvent, false)} className="rounded-lg border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary hover:bg-ui-raised">
+        {shortcut && <button disabled={busy || disabled} onClick={() => start(shortcut[0], true)} className="rounded-lg bg-ui-fill-amber-600 px-3 py-2 text-xs font-semibold text-ui-on-action">{shortcut[1]}</button>}
+        {shownAction.state !== 'closed' && <button disabled={busy || disabled} onClick={() => start(shownAction.state === 'paused' ? 'cadence_resumed' : 'reminder_set', true)} className="rounded-lg border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary">{shownAction.state === 'paused' ? 'Resume' : 'Later'}</button>}
+        {advance && !['paused', 'closed'].includes(shownAction.state) && <button disabled={busy || disabled} onClick={() => start('cadence_paused', true)} className="rounded-lg border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary">Pause tracking</button>}
+        <button disabled={busy || disabled} onClick={() => open ? setOpen(false) : start(suggestedEvent, false)} className="rounded-lg border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary hover:bg-ui-raised">
           {open ? 'Cancel' : 'Update progress'}
         </button>
         </div>
@@ -157,13 +167,13 @@ export function NextActionPanel({ action, currentStage, onRecorded, compact = fa
           ? 'The employer may not respond. This is a possibility, not a confirmed rejection or ghosting outcome.'
           : `${shownAction.date ? `Reminder saved for ${displayDate(shownAction.date)}. ` : ''}Postponing does not establish an employer outcome.`}</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button disabled={busy} onClick={() => start('cadence_paused', true)} className="rounded border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary">Pause tracking</button>
-          <button disabled={busy} onClick={() => {
+          <button disabled={busy || disabled} onClick={() => start('cadence_paused', true)} className="rounded border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary">Pause tracking</button>
+          <button disabled={busy || disabled} onClick={() => {
             if (needsStatusReview && shownAction.state === 'paused') {
               start('cadence_resumed', true); setDeadline(defaultReminderDate(settings.timezone));
             } else { void keepWaiting(); }
           }} className="rounded border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary">Keep waiting</button>
-          <button disabled={busy} onClick={() => { start('stage_updated', true); setStage('closed'); }} className="rounded border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary">Close application</button>
+          <button disabled={busy || disabled} onClick={() => { start('stage_updated', true); setStage('closed'); }} className="rounded border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary">Close application</button>
         </div>
       </div>}
       {!open && error && <p role="alert" className="mt-2 text-xs text-ui-ink-red-300">{error}</p>}
@@ -174,7 +184,8 @@ export function NextActionPanel({ action, currentStage, onRecorded, compact = fa
           <p className="mt-1">{planned.condition}</p>
         </li>)}</ul>
       </div>}
-      {open && <form onSubmit={(e) => { e.preventDefault(); void record(); }} className="mt-4 space-y-3 border-t border-ui-line pt-4">
+      {open && <form onSubmit={(e) => { e.preventDefault(); if (!busy && !disabled) void record(); }} className="mt-4 space-y-3 border-t border-ui-line pt-4">
+        <fieldset disabled={busy || disabled} className="space-y-3">
         <p className="text-xs text-ui-muted">{quick ? 'Confirm what actually happened and its date before saving.' : 'Choose what happened. Saving updates your stage, timeline and next action together.'}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs text-ui-body">What happened?
@@ -210,7 +221,8 @@ export function NextActionPanel({ action, currentStage, onRecorded, compact = fa
           </label>
         </details>
         {error && <p role="alert" className="text-xs text-ui-ink-red-300">{error}</p>}
-        <button disabled={busy} className="rounded-lg bg-ui-fill-amber-600 px-3 py-2 text-xs font-semibold text-ui-on-action disabled:opacity-50">{busy ? 'Saving…' : 'Save progress'}</button>
+        <button disabled={busy || disabled} className="rounded-lg bg-ui-fill-amber-600 px-3 py-2 text-xs font-semibold text-ui-on-action disabled:opacity-50">{busy ? 'Saving…' : advance ? 'Save & next' : 'Save progress'}</button>
+        </fieldset>
       </form>}
     </section>
   );

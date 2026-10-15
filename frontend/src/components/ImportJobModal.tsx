@@ -376,7 +376,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                   <span>{isFetchingUrl ? 'Fetching...' : 'Fetch JD'}</span>
                 </button>
               </div>
-              <p className="text-[11px] text-ui-subtle">
+              <p className="text-[0.6875rem] text-ui-subtle">
                 Click "Fetch JD" to automatically crawl the link and populate the description below.
               </p>
             </div>
@@ -388,7 +388,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                   Job Description Text <span className="text-ui-ink-red-400">*</span>
                 </label>
                 {textInput && (
-                  <span className="text-[11px] text-ui-subtle">
+                  <span className="text-[0.6875rem] text-ui-subtle">
                     {textInput.length} chars
                   </span>
                 )}
@@ -417,7 +417,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                 <div className="mt-3 p-4 bg-ui-page/70 border border-ui-line-soft rounded-xl space-y-3 animate-fadeIn">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-semibold text-ui-body block mb-1">
+                      <label className="text-[0.6875rem] font-semibold text-ui-body block mb-1">
                         Job Title <span className="text-ui-ink-red-400">*</span>
                       </label>
                       <input
@@ -429,7 +429,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-ui-body block mb-1">
+                      <label className="text-[0.6875rem] font-semibold text-ui-body block mb-1">
                         Company Name <span className="text-ui-ink-red-400">*</span>
                       </label>
                       <input
@@ -444,7 +444,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-semibold text-ui-body block mb-1">
+                      <label className="text-[0.6875rem] font-semibold text-ui-body block mb-1">
                         Location (Optional)
                       </label>
                       <input
@@ -456,7 +456,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-ui-body block mb-1">
+                      <label className="text-[0.6875rem] font-semibold text-ui-body block mb-1">
                         Workplace Type
                       </label>
                       <select
@@ -514,7 +514,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                           </span>
                         )}
                         {(editedMeta.workplace_type || analysis.workplace_type) && (
-                          <span className="capitalize px-1.5 py-0.5 bg-ui-raised rounded text-[11px]">
+                          <span className="capitalize px-1.5 py-0.5 bg-ui-raised rounded text-[0.6875rem]">
                             {editedMeta.workplace_type || analysis.workplace_type}
                           </span>
                         )}
@@ -542,7 +542,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
-                          <label className="text-[11px] text-ui-muted block mb-1">Job Title</label>
+                          <label className="text-[0.6875rem] text-ui-muted block mb-1">Job Title</label>
                           <input
                             type="text"
                             value={editedMeta.title}
@@ -551,7 +551,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] text-ui-muted block mb-1">Company</label>
+                          <label className="text-[0.6875rem] text-ui-muted block mb-1">Company</label>
                           <input
                             type="text"
                             value={editedMeta.company}
@@ -560,7 +560,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] text-ui-muted block mb-1">Location</label>
+                          <label className="text-[0.6875rem] text-ui-muted block mb-1">Location</label>
                           <input
                             type="text"
                             value={editedMeta.location}
@@ -569,7 +569,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] text-ui-muted block mb-1">Workplace</label>
+                          <label className="text-[0.6875rem] text-ui-muted block mb-1">Workplace</label>
                           <select
                             value={editedMeta.workplace_type}
                             onChange={(e) => setEditedMeta({ ...editedMeta, workplace_type: e.target.value })}
@@ -581,7 +581,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                           </select>
                         </div>
                         <div>
-                          <label className="text-[11px] text-ui-muted block mb-1">Min Salary ($)</label>
+                          <label className="text-[0.6875rem] text-ui-muted block mb-1">Min Salary ($)</label>
                           <input
                             type="number"
                             value={editedMeta.salary_min}
@@ -590,7 +590,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] text-ui-muted block mb-1">Max Salary ($)</label>
+                          <label className="text-[0.6875rem] text-ui-muted block mb-1">Max Salary ($)</label>
                           <input
                             type="number"
                             value={editedMeta.salary_max}
@@ -634,7 +634,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                         : 'bg-ui-fill-amber-950/60 border-ui-line-amber-700 text-ui-ink-amber-400'
                     }`}>
                       <span className="block text-xs font-black uppercase tracking-wider">{analysis.triage.decision.replace('_', ' ')}</span>
-                      <span className="text-[10px] text-ui-muted">Triage Recommendation</span>
+                      <span className="text-[0.625rem] text-ui-muted">Triage Recommendation</span>
                     </div>
                   ) : score !== null && (
                     <div className={`px-4 py-2 rounded-xl border text-center ${
@@ -645,7 +645,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                         : 'bg-ui-raised border-ui-line text-ui-body'
                     }`}>
                       <span className="block text-2xl font-black">{score}%</span>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider">Overall Fit</span>
+                      <span className="text-[0.625rem] font-semibold uppercase tracking-wider">Overall Fit</span>
                     </div>
                   )}
                 </div>
@@ -661,7 +661,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                     <span className="text-ui-ink-amber-400 font-semibold">Strategic Rationale: </span>
                     {analysis.triage.strategic_thesis}
                   </div>
-                  <div className="text-[11px] text-ui-muted pt-1.5 border-t border-ui-line-soft flex items-center justify-between">
+                  <div className="text-[0.6875rem] text-ui-muted pt-1.5 border-t border-ui-line-soft flex items-center justify-between">
                     <span>Dealbreaker Audit:</span>
                     {hasDealbreakers ? (
                       <span className="text-ui-ink-rose-400 font-semibold flex items-center gap-1">
@@ -678,9 +678,9 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                 {analysis.employer_mandate && (
                   <div className="bg-ui-page/80 p-3.5 rounded-xl border border-ui-line-soft space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-ui-ink-amber-400 uppercase tracking-wider">Acute Employer Bottlenecks</span>
+                      <span className="text-[0.6875rem] font-bold text-ui-ink-amber-400 uppercase tracking-wider">Acute Employer Bottlenecks</span>
                       {analysis.employer_mandate.role_archetype && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-ui-fill-blue-500/20 text-ui-ink-blue-300 border border-ui-line-blue-500/30">
+                        <span className="text-[0.625rem] font-bold px-2 py-0.5 rounded bg-ui-fill-blue-500/20 text-ui-ink-blue-300 border border-ui-line-blue-500/30">
                           Role: {analysis.employer_mandate.role_archetype}
                         </span>
                       )}
@@ -708,8 +708,8 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                 {analysis.gaps_and_mitigation && analysis.gaps_and_mitigation.length > 0 && (
                   <div className="bg-ui-page/80 p-3.5 rounded-xl border border-ui-line-soft space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-ui-muted uppercase tracking-wider">Gaps & Strategic Defense</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-ui-fill-amber-500/10 text-ui-ink-amber-300 border border-ui-line-amber-500/30">
+                      <span className="text-[0.6875rem] font-bold text-ui-muted uppercase tracking-wider">Gaps & Strategic Defense</span>
+                      <span className="text-[0.625rem] font-bold px-2 py-0.5 rounded bg-ui-fill-amber-500/10 text-ui-ink-amber-300 border border-ui-line-amber-500/30">
                         Risk Audit
                       </span>
                     </div>
@@ -720,9 +720,9 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                             <span className="font-bold text-ui-ink-amber-400 flex items-center gap-1">
                               <span>▲ Gap:</span> <span>{g.gap}</span>
                             </span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-ui-page text-ui-muted border border-ui-line-soft">{g.severity}</span>
+                            <span className="text-[0.625rem] px-1.5 py-0.5 rounded bg-ui-page text-ui-muted border border-ui-line-soft">{g.severity}</span>
                           </div>
-                          <div className="text-ui-body text-[11px] bg-ui-page/60 p-2 rounded border border-ui-line-soft/80 leading-relaxed">
+                          <div className="text-ui-body text-[0.6875rem] bg-ui-page/60 p-2 rounded border border-ui-line-soft/80 leading-relaxed">
                             <span className="text-ui-ink-emerald-400 font-semibold">🛡️ Defense: </span>
                             {g.compensating_evidence}
                           </div>
@@ -737,15 +737,15 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-ui-page/80 p-3 rounded-xl border border-ui-line-soft text-center">
-                    <span className="text-[11px] text-ui-muted block mb-1">Technical Stack</span>
+                    <span className="text-[0.6875rem] text-ui-muted block mb-1">Technical Stack</span>
                     <span className="text-sm font-bold text-ui-ink-amber-400">{analysis.technical_fit_score || score || 85}%</span>
                   </div>
                   <div className="bg-ui-page/80 p-3 rounded-xl border border-ui-line-soft text-center">
-                    <span className="text-[11px] text-ui-muted block mb-1">Domain & Scope</span>
+                    <span className="text-[0.6875rem] text-ui-muted block mb-1">Domain & Scope</span>
                     <span className="text-sm font-bold text-ui-ink-amber-400">{analysis.domain_fit_score || score || 90}%</span>
                   </div>
                   <div className="bg-ui-page/80 p-3 rounded-xl border border-ui-line-soft text-center">
-                    <span className="text-[11px] text-ui-muted block mb-1">Work Eligibility</span>
+                    <span className="text-[0.6875rem] text-ui-muted block mb-1">Work Eligibility</span>
                     <span className="text-sm font-bold text-ui-ink-emerald-400">{analysis.eligibility_fit_score || 100}%</span>
                   </div>
                 </div>

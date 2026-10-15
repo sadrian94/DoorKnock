@@ -53,6 +53,27 @@ def test_cold_application_uses_ten_weekdays_and_preserves_legacy_reminder(client
         assert conn.execute("SELECT next_followup_date FROM applications").fetchone()[0] == '2026-09-28'
 
 
+def test_dashboard_exposes_future_actions_without_marking_them_due(client):
+    record(client, 'reminder_set', action_date='2026-12-01')
+    dashboard = client.get('/api/pipeline/dashboard').json()
+    assert dashboard['attention_items'] == []
+    assert dashboard['scheduled_items'][0]['date'] == '2026-12-01'
+    assert dashboard['scheduled_items'][0]['state'] == 'waiting'
+    record(client, 'cadence_paused', occurred_at='2026-10-01T14:01:00Z')
+    assert client.get('/api/pipeline/dashboard').json()['scheduled_items'] == []
+
+
+def test_new_progress_returns_exact_undo_target_but_duplicate_does_not(client):
+    saved = record(client, 'reminder_set', action_date='2026-10-20')
+    event_id = saved['recorded_event_id']
+    duplicate = record(client, 'reminder_set', action_date='2026-10-20')
+    assert 'recorded_event_id' not in duplicate
+    response = client.delete(f'/api/pipeline/applications/application/timeline/{event_id}')
+    assert response.status_code == 200
+    assert schedule(client)['date'] == '2026-10-09'
+    assert event_id in [event['id'] for event in client.get('/api/jobs/job').json()['deleted_timeline']]
+
+
 def test_draft_or_connection_invitation_is_not_contact_evidence(client):
     crud.transition_application_stage('application', 'knocked')
     assert schedule(client)['kind'] == 'record_review'

@@ -357,10 +357,10 @@ def get_schedule(application_id):
 
 
 def attention(days_ahead=3):
-    horizon = local_today() + timedelta(days=days_ahead)
+    horizon = local_today() + timedelta(days=days_ahead) if days_ahead is not None else None
     with get_db() as conn:
         items = [item for item in schedules(conn) if item['state'] not in ('paused', 'closed')
-                 and (not item['date'] or event_day(item['date']) <= horizon
+                 and (horizon is None or not item['date'] or event_day(item['date']) <= horizon
                       or item['kind'] in ('interview', 'assessment'))]
     priority = {'interview_review': 0, 'interview': 0, 'assessment': 0, 'thank_you': 1,
                 'record_review': 2, 'followup': 3, 'status_check': 4}
@@ -449,8 +449,10 @@ def record_event(application_id, event_type, occurred_at=None, **fields):
             _transition_application_stage(conn, application_id, synced_target, fields.get('outcome'), occurred_at=occurred, log_event=False)
             meta['_stage_after'] = _application_state(conn, application_id)
         encoded_meta = json.dumps(meta, sort_keys=True)
+        event_id = str(uuid.uuid4())
         conn.execute('INSERT INTO timeline_events (id,application_id,event_type,title,occurred_at,metadata,from_stage,to_stage) VALUES (?,?,?,?,?,?,?,?)',
-                     (str(uuid.uuid4()), application_id, event_type, EVENT_LABELS[event_type],
+                     (event_id, application_id, event_type, EVENT_LABELS[event_type],
                       occurred, encoded_meta, current_stage if synced_target else None, synced_target))
         conn.commit()
-        return next(item for item in schedules(conn) if item['application_id'] == application_id)
+        return {**next(item for item in schedules(conn) if item['application_id'] == application_id),
+                'recorded_event_id': event_id}

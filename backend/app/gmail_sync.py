@@ -335,7 +335,7 @@ async def scan_recent(days: int = 14, limit: int = 150, page_token: str | None =
         return result
 
 
-def saved_messages(limit: int = 30) -> list[dict]:
+def saved_messages(limit: int = 30, application_id: str | None = None) -> list[dict]:
     with get_db() as conn:
         return [dict(row) for row in conn.execute("""
             SELECT m.message_id, m.application_id, m.received_at, m.event_code,
@@ -344,8 +344,9 @@ def saved_messages(limit: int = 30) -> list[dict]:
             JOIN applications a ON a.id = m.application_id
             JOIN jobs j ON j.id = a.job_id
             WHERE m.match_reason != 'job_board_alert'
+                AND (? IS NULL OR m.application_id = ?)
             ORDER BY m.received_at DESC LIMIT ?
-        """, (limit,)).fetchall()]
+        """, (application_id, application_id, limit)).fetchall()]
 
 
 def pending_reviews(limit: int = 50) -> dict:

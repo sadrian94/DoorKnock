@@ -175,6 +175,7 @@ def get_dashboard_summary() -> Dict[str, Any]:
             {"week_start": week, "count": count} for week, count in weeks.items()
         ],
         "attention_items": attention_items,
+        "scheduled_items": cadence.attention(days_ahead=None),
     }
 
 def transition_application_stage(application_id: str, to_stage: str, outcome: Optional[str] = None, note: Optional[str] = None) -> Optional[Dict[str, Any]]:

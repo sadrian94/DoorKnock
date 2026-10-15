@@ -83,6 +83,22 @@ def test_company_and_role_both_required():
         assert _match_application(conn, "Cedar Labs", "") is None
 
 
+def test_application_email_context_filters_before_recent_limit():
+    target = _seed(company='Target Example', title='Analyst')
+    other = _seed(company='Other Example', title='Analyst')
+    with get_db() as conn:
+        for index in range(32):
+            conn.execute('INSERT INTO gmail_application_messages (message_id, thread_id, application_id, received_at, event_code, match_reason) VALUES (?,?,?,?,?,?)',
+                         (f'context-{index}', 'synthetic-thread', target if index == 0 else other,
+                          f'2026-10-{1 + index // 2:02d}T12:00:00Z', 'related', 'company_and_role'))
+        conn.commit()
+    with TestClient(app) as client:
+        result = client.get('/api/gmail/messages', params={'application_id': target})
+        assert result.status_code == 200
+        assert [message['message_id'] for message in result.json()['messages']] == ['context-0']
+        assert client.get('/api/gmail/messages', params={'application_id': 'missing'}).json()['messages'] == []
+
+
 def test_vague_rejection_not_auto_classified():
     assert _event("Update", "Unfortunately we had many candidates.") is None
 

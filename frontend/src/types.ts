@@ -133,6 +133,7 @@ export interface DashboardSummary {
   stage_counts: Record<string, number>;
   weekly_applications: { week_start: string; count: number }[];
   attention_items: NextAction[];
+  scheduled_items?: NextAction[];
 }
 
 export interface TriageResult {

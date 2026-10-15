@@ -56,8 +56,8 @@ async def scan(request: ScanRequest):
 
 
 @router.get("/messages")
-def messages():
-    return {"messages": gmail_sync.saved_messages()}
+def messages(application_id: str | None = None):
+    return {"messages": gmail_sync.saved_messages(application_id=application_id)}
 
 
 @router.get("/reviews")

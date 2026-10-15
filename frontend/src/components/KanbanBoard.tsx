@@ -112,7 +112,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   return (
     <div className="flex flex-col h-[calc(100vh-65px)]">
       {/* Top Toolbar */}
-      <div className="px-6 py-4 border-b border-ui-line-soft bg-ui-panel/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="px-6 py-4 border-b border-ui-line-soft bg-ui-panel/50 flex flex-col md:flex-row md:flex-wrap md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-ui-heading tracking-tight">Application Pipeline</h2>
           <p className="text-xs text-ui-muted">
@@ -120,7 +120,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex max-w-full flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => setHideEmptyStages(!hideEmptyStages)}
@@ -139,14 +139,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </span>
           </button>
 
-          <div className="relative">
+          <div className="relative min-w-0 w-full sm:w-auto">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ui-muted" />
             <input
               type="text"
               placeholder="Search applications..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-ui-panel border border-ui-line text-ui-secondary text-xs rounded-xl pl-9 pr-4 py-1.5 w-60 focus:outline-none focus:border-ui-line-amber-500 shadow-sm"
+              className="bg-ui-panel border border-ui-line text-ui-secondary text-xs rounded-xl pl-9 pr-4 py-1.5 w-full sm:w-60 max-w-full focus:outline-none focus:border-ui-line-amber-500 shadow-sm"
             />
           </div>
           <select
@@ -200,7 +200,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                       <ChevronRight className="h-4 w-4" />
                     </button>
 
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold mb-4 ${col.badgeColor}`}>
+                    <span className={`text-[0.625rem] px-1.5 py-0.5 rounded-full font-bold mb-4 ${col.badgeColor}`}>
                       {cards.length}
                     </span>
 
@@ -268,7 +268,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                   <span className="truncate">{card.company}</span>
                                 </div>
 
-                                {card.outcome && <span className="text-[10px] text-ui-muted">{card.outcome.replaceAll('_', ' ')}</span>}
+                                {card.outcome && <span className="text-[0.625rem] text-ui-muted">{card.outcome.replaceAll('_', ' ')}</span>}
 
                               </div>
 
@@ -281,7 +281,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                               </h4>
 
                               {/* Tags */}
-                              <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-ui-muted">
+                              <div className="flex flex-wrap items-center gap-2 mt-2 text-[0.6875rem] text-ui-muted">
                                 {card.location && (
                                   <span className="flex items-center gap-1 text-ui-muted truncate max-w-[150px]">
                                     <MapPin className="h-3 w-3 text-ui-subtle" />
@@ -292,9 +292,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
                               {/* Timeline indicator & Touchpoints */}
                               {card.next_action && card.next_action.state !== 'closed' && (
-                                <p className="mt-2 text-[10px] text-ui-ink-amber-300">{card.next_action.state === 'waiting' ? 'Waiting for response' : card.next_action.label}</p>
+                                <p className="mt-2 text-[0.625rem] text-ui-ink-amber-300">{card.next_action.state === 'waiting' ? 'Waiting for response' : card.next_action.label}</p>
                               )}
-                              <div className="flex items-center justify-between text-[10px] text-ui-subtle mt-3 pt-2 border-t border-ui-line-soft/80">
+                              <div className="flex items-center justify-between text-[0.625rem] text-ui-subtle mt-3 pt-2 border-t border-ui-line-soft/80">
                                 {daysAgo && (
                                   <span className="flex items-center gap-1 text-ui-muted"
                                     title={hasUnknownTimeZone(card.applied_date || card.updated_at || '') ? 'Original date; time zone not recorded' : settings.timezone}>
@@ -332,7 +332,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                     }[decision] || { label: decision.replace(/_/g, ' '), icon: '📋', style: 'text-ui-muted bg-ui-raised border-ui-line' };
 
                                     return (
-                                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1 shadow-sm ${badge.style}`} title={`Triage Verdict: ${decision.replace(/_/g, ' ')}`}>
+                                      <span className={`text-[0.625rem] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1 shadow-sm ${badge.style}`} title={`Triage Verdict: ${decision.replace(/_/g, ' ')}`}>
                                         <span>{badge.icon}</span>
                                         <span>{badge.label}</span>
                                       </span>

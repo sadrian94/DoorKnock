@@ -393,7 +393,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           {parsedRecon ? (
             <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-ui-fill-emerald-950/40 border border-ui-line-emerald-800/50 text-ui-ink-emerald-300 text-xs mb-4 max-w-lg w-full text-left">
               <Sparkles className="h-4 w-4 text-ui-ink-emerald-400 shrink-0" />
-              <span className="text-[11px] leading-relaxed">
+              <span className="text-[0.6875rem] leading-relaxed">
                 <strong>Recon Active:</strong> Tailoring will automatically align with {parsedRecon.department_intel?.team_name || 'department'} frictions and business model hooks.
               </span>
             </div>
@@ -401,14 +401,14 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
             <div className="flex items-center justify-between gap-3 px-3.5 py-2 rounded-xl bg-ui-fill-amber-950/30 border border-ui-line-amber-800/40 text-ui-ink-amber-200 text-xs mb-4 max-w-lg w-full text-left">
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-ui-ink-amber-400 shrink-0" />
-                <span className="text-[11px] text-ui-ink-amber-200/90 leading-relaxed">
+                <span className="text-[0.6875rem] text-ui-ink-amber-200/90 leading-relaxed">
                   Tip: Run <strong>Company Recon</strong> first to feed strategic business model & department hooks into your documents.
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveTab('recon')}
-                className="text-[11px] font-semibold text-ui-ink-amber-400 hover:text-ui-ink-amber-300 underline shrink-0 cursor-pointer"
+                className="text-[0.6875rem] font-semibold text-ui-ink-amber-400 hover:text-ui-ink-amber-300 underline shrink-0 cursor-pointer"
               >
                 Go to Recon
               </button>
@@ -427,7 +427,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           {/* AI Prompt Box: Option 1 (Chat with Agent) */}
           <div className="w-full max-w-lg bg-ui-panel border border-ui-line-soft rounded-xl p-3 text-left mb-4 shadow-inner">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-semibold text-ui-muted uppercase tracking-wider">
+              <span className="text-[0.6875rem] font-semibold text-ui-muted uppercase tracking-wider">
                 Ask Agent in Chat (Option 1)
               </span>
               <button
@@ -478,13 +478,13 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
             </select>
 
             {activeVersionData && (
-              <span className="text-[11px] text-ui-muted hidden sm:inline font-mono">
+              <span className="text-[0.6875rem] text-ui-muted hidden sm:inline font-mono">
                 {(activeVersionData.size_bytes / 1024).toFixed(1)} KB • {activeVersionData.download_filename || activeVersionData.filename}
               </span>
             )}
 
             {parsedRecon ? (
-              <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-ui-fill-emerald-950/80 text-ui-ink-emerald-300 border border-ui-line-emerald-800/60" title="Tailored using Company Recon business model and department hooks">
+              <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[0.625rem] font-medium bg-ui-fill-emerald-950/80 text-ui-ink-emerald-300 border border-ui-line-emerald-800/60" title="Tailored using Company Recon business model and department hooks">
                 <Sparkles className="h-3 w-3 text-ui-ink-emerald-400" />
                 <span>Recon Intel Synced</span>
               </span>
@@ -492,7 +492,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('recon')}
-                className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-ui-fill-amber-950/40 text-ui-ink-amber-300/80 border border-ui-line-amber-900/60 hover:text-ui-ink-amber-200 hover:border-ui-line-amber-700 transition cursor-pointer"
+                className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[0.625rem] font-medium bg-ui-fill-amber-950/40 text-ui-ink-amber-300/80 border border-ui-line-amber-900/60 hover:text-ui-ink-amber-200 hover:border-ui-line-amber-700 transition cursor-pointer"
                 title="Run Company Recon to unlock deeper business model hooks"
               >
                 <Building2 className="h-3 w-3 text-ui-ink-amber-400" />
@@ -640,7 +640,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11px] text-ui-subtle">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[0.6875rem] text-ui-subtle">
                 {getJobIdentifierItems(job).map(({ label, value }) => {
                   const isCopied = copiedJobIdentifier === value;
 
@@ -675,13 +675,13 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
         {/* Navigation Tabs - Modern Segmented Control (Zero Horizontal Scroll) */}
         <div className="px-6 py-2.5 border-b border-ui-line-soft bg-ui-page/70 shrink-0">
-          <nav className="grid grid-cols-3 sm:grid-cols-6 gap-1 p-1 bg-ui-panel/90 border border-ui-line-soft/90 rounded-xl" aria-label="Job details tabs">
+          <nav className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1 p-1 bg-ui-panel/90 border border-ui-line-soft/90 rounded-xl" aria-label="Job details tabs">
             {/* 1. Job Brief */}
             <button
               type="button"
               onClick={() => setActiveTab('jd')}
               title="Tactical Match Brief & Job Description"
-              className={`flex items-center justify-center gap-1.5 py-2 px-1.5 text-[11px] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
+              className={`flex min-w-0 flex-wrap items-center justify-center gap-1.5 py-2 px-1.5 text-[0.6875rem] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
                 activeTab === 'jd'
                   ? 'bg-ui-fill-amber-500/15 text-ui-ink-amber-300 border border-ui-line-amber-500/40 shadow-sm shadow-amber-950/30'
                   : 'text-ui-muted hover:text-ui-secondary hover:bg-ui-raised/60 border border-transparent'
@@ -696,7 +696,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               type="button"
               onClick={() => setActiveTab('recon')}
               title="Company Business Model & Team Intelligence Recon"
-              className={`flex items-center justify-center gap-1.5 py-2 px-1.5 text-[11px] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
+              className={`flex min-w-0 flex-wrap items-center justify-center gap-1.5 py-2 px-1.5 text-[0.6875rem] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
                 activeTab === 'recon'
                   ? 'bg-ui-fill-amber-500/15 text-ui-ink-amber-300 border border-ui-line-amber-500/40 shadow-sm shadow-amber-950/30'
                   : 'text-ui-muted hover:text-ui-secondary hover:bg-ui-raised/60 border border-transparent'
@@ -705,11 +705,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               <Building2 className={`h-3.5 w-3.5 shrink-0 ${activeTab === 'recon' ? 'text-ui-ink-amber-400' : 'text-ui-muted'}`} />
               <span className="whitespace-nowrap">Company Recon</span>
               {parsedRecon ? (
-                <span className="px-1 py-0.5 rounded text-[9px] font-mono font-bold bg-ui-fill-emerald-950 text-ui-ink-emerald-400 border border-ui-line-emerald-800/80 shrink-0">
+                <span className="px-1 py-0.5 rounded text-[0.5625rem] font-mono font-bold bg-ui-fill-emerald-950 text-ui-ink-emerald-400 border border-ui-line-emerald-800/80 shrink-0">
                   Active
                 </span>
               ) : (
-                <span className="px-1 py-0.5 rounded text-[9px] font-mono bg-ui-raised text-ui-subtle border border-ui-line/60 shrink-0">
+                <span className="px-1 py-0.5 rounded text-[0.5625rem] font-mono bg-ui-raised text-ui-subtle border border-ui-line/60 shrink-0">
                   Ready
                 </span>
               )}
@@ -720,7 +720,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               type="button"
               onClick={() => setActiveTab('contacts')}
               title="Gatekeeper Recon & Cold Outreach Launchpad"
-              className={`flex items-center justify-center gap-1.5 py-2 px-1.5 text-[11px] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
+              className={`flex min-w-0 flex-wrap items-center justify-center gap-1.5 py-2 px-1.5 text-[0.6875rem] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
                 activeTab === 'contacts'
                   ? 'bg-ui-fill-amber-500/15 text-ui-ink-amber-300 border border-ui-line-amber-500/40 shadow-sm shadow-amber-950/30'
                   : 'text-ui-muted hover:text-ui-secondary hover:bg-ui-raised/60 border border-transparent'
@@ -728,7 +728,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
             >
               <UserCheck className={`h-3.5 w-3.5 shrink-0 ${activeTab === 'contacts' ? 'text-ui-ink-blue-400' : 'text-ui-muted'}`} />
               <span className="whitespace-nowrap">Gatekeepers</span>
-              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-ui-raised text-ui-body border border-ui-line shrink-0">
+              <span className="px-1.5 py-0.5 rounded-full text-[0.5625rem] font-mono font-bold bg-ui-raised text-ui-body border border-ui-line shrink-0">
                 {activeJob?.contacts?.length || 0}
               </span>
             </button>
@@ -738,7 +738,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               type="button"
               onClick={() => setActiveTab('resume')}
               title="Typst Tailored ATS Resume"
-              className={`flex items-center justify-center gap-1.5 py-2 px-1.5 text-[11px] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
+              className={`flex min-w-0 flex-wrap items-center justify-center gap-1.5 py-2 px-1.5 text-[0.6875rem] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
                 activeTab === 'resume'
                   ? 'bg-ui-fill-amber-500/15 text-ui-ink-amber-300 border border-ui-line-amber-500/40 shadow-sm shadow-amber-950/30'
                   : 'text-ui-muted hover:text-ui-secondary hover:bg-ui-raised/60 border border-transparent'
@@ -747,11 +747,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               <FileCheck className={`h-3.5 w-3.5 shrink-0 ${activeTab === 'resume' ? 'text-ui-ink-emerald-400' : 'text-ui-muted'}`} />
               <span className="whitespace-nowrap">Resume</span>
               {documentsInfo?.resume?.available ? (
-                <span className="px-1 py-0.5 rounded text-[9px] font-mono font-bold bg-ui-fill-emerald-950 text-ui-ink-emerald-400 border border-ui-line-emerald-800/80 shrink-0">
+                <span className="px-1 py-0.5 rounded text-[0.5625rem] font-mono font-bold bg-ui-fill-emerald-950 text-ui-ink-emerald-400 border border-ui-line-emerald-800/80 shrink-0">
                   {documentsInfo.resume.latest_version}
                 </span>
               ) : (
-                <span className="px-1 py-0.5 rounded text-[9px] font-mono bg-ui-raised/80 text-ui-subtle border border-ui-line/50 shrink-0">
+                <span className="px-1 py-0.5 rounded text-[0.5625rem] font-mono bg-ui-raised/80 text-ui-subtle border border-ui-line/50 shrink-0">
                   None
                 </span>
               )}
@@ -762,7 +762,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               type="button"
               onClick={() => setActiveTab('cover_letter')}
               title="Sepia De-AI Problem-First Cover Letter"
-              className={`flex items-center justify-center gap-1.5 py-2 px-1.5 text-[11px] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
+              className={`flex min-w-0 flex-wrap items-center justify-center gap-1.5 py-2 px-1.5 text-[0.6875rem] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
                 activeTab === 'cover_letter'
                   ? 'bg-ui-fill-amber-500/15 text-ui-ink-amber-300 border border-ui-line-amber-500/40 shadow-sm shadow-amber-950/30'
                   : 'text-ui-muted hover:text-ui-secondary hover:bg-ui-raised/60 border border-transparent'
@@ -771,11 +771,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               <Mail className={`h-3.5 w-3.5 shrink-0 ${activeTab === 'cover_letter' ? 'text-ui-ink-indigo-400' : 'text-ui-muted'}`} />
               <span className="whitespace-nowrap">Cover Letter</span>
               {documentsInfo?.cover_letter?.available ? (
-                <span className="px-1 py-0.5 rounded text-[9px] font-mono font-bold bg-ui-fill-emerald-950 text-ui-ink-emerald-400 border border-ui-line-emerald-800/80 shrink-0">
+                <span className="px-1 py-0.5 rounded text-[0.5625rem] font-mono font-bold bg-ui-fill-emerald-950 text-ui-ink-emerald-400 border border-ui-line-emerald-800/80 shrink-0">
                   {documentsInfo.cover_letter.latest_version}
                 </span>
               ) : (
-                <span className="px-1 py-0.5 rounded text-[9px] font-mono bg-ui-raised/80 text-ui-subtle border border-ui-line/50 shrink-0">
+                <span className="px-1 py-0.5 rounded text-[0.5625rem] font-mono bg-ui-raised/80 text-ui-subtle border border-ui-line/50 shrink-0">
                   None
                 </span>
               )}
@@ -786,7 +786,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               type="button"
               onClick={() => setActiveTab('timeline')}
               title="Application Stage Event History"
-              className={`flex items-center justify-center gap-1.5 py-2 px-1.5 text-[11px] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
+              className={`flex min-w-0 flex-wrap items-center justify-center gap-1.5 py-2 px-1.5 text-[0.6875rem] xl:text-xs font-semibold rounded-lg transition-all select-none cursor-pointer ${
                 activeTab === 'timeline'
                   ? 'bg-ui-fill-amber-500/15 text-ui-ink-amber-300 border border-ui-line-amber-500/40 shadow-sm shadow-amber-950/30'
                   : 'text-ui-muted hover:text-ui-secondary hover:bg-ui-raised/60 border border-transparent'
@@ -794,7 +794,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
             >
               <Clock className={`h-3.5 w-3.5 shrink-0 ${activeTab === 'timeline' ? 'text-ui-ink-amber-400' : 'text-ui-muted'}`} />
               <span className="whitespace-nowrap">Timeline</span>
-              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-ui-raised text-ui-body border border-ui-line shrink-0">
+              <span className="px-1.5 py-0.5 rounded-full text-[0.5625rem] font-mono font-bold bg-ui-raised text-ui-body border border-ui-line shrink-0">
                 {activeJob?.timeline?.length || 0}
               </span>
             </button>
@@ -868,7 +868,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                           <span className="font-bold text-ui-ink-amber-400">Strategic Rationale: </span>
                           {parsedAnalysis.triage.strategic_thesis}
                         </div>
-                        <div className="text-[11px] text-ui-muted pt-1.5 border-t border-ui-line-soft/80 flex items-center justify-between">
+                        <div className="text-[0.6875rem] text-ui-muted pt-1.5 border-t border-ui-line-soft/80 flex items-center justify-between">
                           <span>Dealbreaker Audit:</span>
                           {(() => {
                             const detected = (parsedAnalysis.triage.dealbreakers_detected || []).filter(
@@ -891,12 +891,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                       {parsedAnalysis.employer_mandate && (
                         <div className="bg-ui-page/70 p-3.5 rounded-xl border border-ui-line-soft/80 space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold text-ui-ink-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="text-[0.6875rem] font-bold text-ui-ink-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                               <Target className="h-3.5 w-3.5 text-ui-ink-amber-500" />
                               Acute Employer Bottlenecks
                             </span>
                             {parsedAnalysis.employer_mandate.role_archetype && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-ui-fill-blue-500/20 text-ui-ink-blue-300 border border-ui-line-blue-500/30">
+                              <span className="text-[0.625rem] font-bold px-2 py-0.5 rounded bg-ui-fill-blue-500/20 text-ui-ink-blue-300 border border-ui-line-blue-500/30">
                                 Role: {parsedAnalysis.employer_mandate.role_archetype}
                               </span>
                             )}
@@ -924,11 +924,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                       {parsedAnalysis.gaps_and_mitigation && parsedAnalysis.gaps_and_mitigation.length > 0 && (
                         <div className="bg-ui-page/70 p-3.5 rounded-xl border border-ui-line-soft/80 space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold text-ui-muted uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="text-[0.6875rem] font-bold text-ui-muted uppercase tracking-wider flex items-center gap-1.5">
                               <ShieldAlert className="h-3.5 w-3.5 text-ui-ink-amber-500" />
                               Identified Gaps & Strategic Defense
                             </span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-ui-fill-amber-500/10 text-ui-ink-amber-300 border border-ui-line-amber-500/30">
+                            <span className="text-[0.625rem] font-bold px-2 py-0.5 rounded bg-ui-fill-amber-500/10 text-ui-ink-amber-300 border border-ui-line-amber-500/30">
                               Risk Audit
                             </span>
                           </div>
@@ -939,9 +939,9 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                                   <span className="font-bold text-ui-ink-amber-400 flex items-center gap-1">
                                     <span>▲ Gap:</span> <span>{g.gap}</span>
                                   </span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-ui-page text-ui-muted border border-ui-line-soft">{g.severity}</span>
+                                  <span className="text-[0.625rem] px-1.5 py-0.5 rounded bg-ui-page text-ui-muted border border-ui-line-soft">{g.severity}</span>
                                 </div>
-                                <div className="text-ui-body text-[11px] bg-ui-page/60 p-2 rounded border border-ui-line-soft/80 leading-relaxed">
+                                <div className="text-ui-body text-[0.6875rem] bg-ui-page/60 p-2 rounded border border-ui-line-soft/80 leading-relaxed">
                                   <span className="text-ui-ink-emerald-400 font-semibold">🛡️ Defense: </span>
                                   {g.compensating_evidence}
                                 </div>
@@ -957,19 +957,19 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                       {parsedAnalysis && (
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div className="bg-ui-page/60 p-3 rounded-lg border border-ui-line-soft text-center">
-                            <div className="text-[11px] text-ui-muted uppercase font-medium">Technical Fit</div>
+                            <div className="text-[0.6875rem] text-ui-muted uppercase font-medium">Technical Fit</div>
                             <div className="text-lg font-bold text-ui-ink-emerald-400 mt-0.5">
                               {parsedAnalysis.technical_fit_score ? `${Math.round(parsedAnalysis.technical_fit_score)}%` : 'N/A'}
                             </div>
                           </div>
                           <div className="bg-ui-page/60 p-3 rounded-lg border border-ui-line-soft text-center">
-                            <div className="text-[11px] text-ui-muted uppercase font-medium">Domain Fit</div>
+                            <div className="text-[0.6875rem] text-ui-muted uppercase font-medium">Domain Fit</div>
                             <div className="text-lg font-bold text-ui-ink-blue-400 mt-0.5">
                               {parsedAnalysis.domain_fit_score ? `${Math.round(parsedAnalysis.domain_fit_score)}%` : 'N/A'}
                             </div>
                           </div>
                           <div className="bg-ui-page/60 p-3 rounded-lg border border-ui-line-soft text-center">
-                            <div className="text-[11px] text-ui-muted uppercase font-medium">Work Auth / Eligibility</div>
+                            <div className="text-[0.6875rem] text-ui-muted uppercase font-medium">Work Auth / Eligibility</div>
                             <div className="text-lg font-bold text-ui-ink-amber-400 mt-0.5">
                               {parsedAnalysis.eligibility_fit_score ? `${Math.round(parsedAnalysis.eligibility_fit_score)}%` : 'N/A'}
                             </div>
@@ -987,7 +987,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
                       {parsedAnalysis?.employer_pain_points && parsedAnalysis.employer_pain_points.length > 0 && (
                         <div className="space-y-2 pt-2 border-t border-ui-line-amber-900/30">
-                          <div className="text-[11px] font-bold text-ui-ink-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <div className="text-[0.6875rem] font-bold text-ui-ink-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                             <Target className="h-3.5 w-3.5 text-ui-ink-amber-500" />
                             Target Employer Pain Points (DoorKnock Hooks)
                           </div>
@@ -1004,7 +1004,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
                       {parsedAnalysis?.key_strengths && parsedAnalysis.key_strengths.length > 0 && (
                         <div className="space-y-2 pt-2 border-t border-ui-line-amber-900/30">
-                          <div className="text-[11px] font-bold text-ui-ink-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <div className="text-[0.6875rem] font-bold text-ui-ink-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                             <CheckCircle2 className="h-3.5 w-3.5 text-ui-ink-emerald-500" />
                             Candidate Evidence Highlights
                           </div>
@@ -1021,7 +1021,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
                       {parsedAnalysis?.gaps_or_risks && parsedAnalysis.gaps_or_risks.length > 0 && (
                         <div className="space-y-2 pt-2 border-t border-ui-line-amber-900/30">
-                          <div className="text-[11px] font-bold text-ui-ink-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <div className="text-[0.6875rem] font-bold text-ui-ink-rose-400 uppercase tracking-wider flex items-center gap-1.5">
                             <AlertTriangle className="h-3.5 w-3.5 text-ui-ink-rose-500" />
                             Identified Gaps & Interview Risks
                           </div>
@@ -1072,7 +1072,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                     <h3 className="text-sm font-bold text-ui-heading flex items-center gap-2">
                       <span>Company & Department Recon Intelligence</span>
                       {parsedRecon && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-ui-fill-emerald-500/10 text-ui-ink-emerald-300 border border-ui-line-emerald-500/30">
+                        <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded bg-ui-fill-emerald-500/10 text-ui-ink-emerald-300 border border-ui-line-emerald-500/30">
                           Verified
                         </span>
                       )}
@@ -1129,7 +1129,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                       </span>
                     )}
                     {parsedRecon.researched_at && (
-                      <span className="text-ui-subtle text-[11px] font-mono ml-auto">
+                      <span className="text-ui-subtle text-[0.6875rem] font-mono ml-auto">
                         Analyzed: {formatDateTime(parsedRecon.researched_at, settings.timezone)}
                       </span>
                     )}
@@ -1149,21 +1149,21 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
                         {parsedRecon.business_model?.revenue_engine && (
                           <div>
-                            <span className="text-[11px] font-semibold text-ui-muted uppercase block">Monetization Engine</span>
+                            <span className="text-[0.6875rem] font-semibold text-ui-muted uppercase block">Monetization Engine</span>
                             <p className="text-xs text-ui-secondary mt-0.5 leading-relaxed">{parsedRecon.business_model.revenue_engine}</p>
                           </div>
                         )}
 
                         {parsedRecon.business_model?.target_customers && (
                           <div>
-                            <span className="text-[11px] font-semibold text-ui-muted uppercase block">Target Customers</span>
+                            <span className="text-[0.6875rem] font-semibold text-ui-muted uppercase block">Target Customers</span>
                             <p className="text-xs text-ui-body mt-0.5 leading-relaxed">{parsedRecon.business_model.target_customers}</p>
                           </div>
                         )}
 
                         {parsedRecon.business_model?.value_proposition && (
                           <div>
-                            <span className="text-[11px] font-semibold text-ui-muted uppercase block">Value Proposition & Moat</span>
+                            <span className="text-[0.6875rem] font-semibold text-ui-muted uppercase block">Value Proposition & Moat</span>
                             <p className="text-xs text-ui-body mt-0.5 leading-relaxed">{parsedRecon.business_model.value_proposition}</p>
                           </div>
                         )}
@@ -1177,7 +1177,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                       </div>
 
                       {parsedRecon.company_stage?.scale_and_momentum && (
-                        <div className="pt-2 border-t border-ui-line-soft text-[11px] text-ui-muted">
+                        <div className="pt-2 border-t border-ui-line-soft text-[0.6875rem] text-ui-muted">
                           <span className="font-medium text-ui-body">Scale & Momentum: </span>
                           {parsedRecon.company_stage.scale_and_momentum}
                         </div>
@@ -1193,7 +1193,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                             Department Charter & Supervisor Pressure
                           </span>
                           {parsedRecon.department_intel?.role_archetype && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-ui-fill-blue-500/20 text-ui-ink-blue-300 border border-ui-line-blue-500/30">
+                            <span className="text-[0.625rem] font-bold px-2 py-0.5 rounded bg-ui-fill-blue-500/20 text-ui-ink-blue-300 border border-ui-line-blue-500/30">
                               {parsedRecon.department_intel.role_archetype}
                             </span>
                           )}
@@ -1201,21 +1201,21 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
                         {parsedRecon.department_intel?.team_name && (
                           <div>
-                            <span className="text-[11px] font-semibold text-ui-muted uppercase block">Target Team / Unit</span>
+                            <span className="text-[0.6875rem] font-semibold text-ui-muted uppercase block">Target Team / Unit</span>
                             <p className="text-xs font-mono font-semibold text-ui-ink-blue-200 mt-0.5">{parsedRecon.department_intel.team_name}</p>
                           </div>
                         )}
 
                         {parsedRecon.department_intel?.team_charter && (
                           <div>
-                            <span className="text-[11px] font-semibold text-ui-muted uppercase block">Department Mission</span>
+                            <span className="text-[0.6875rem] font-semibold text-ui-muted uppercase block">Department Mission</span>
                             <p className="text-xs text-ui-secondary mt-0.5 leading-relaxed">{parsedRecon.department_intel.team_charter}</p>
                           </div>
                         )}
 
                         {parsedRecon.department_intel?.hiring_manager_profile && (
                           <div>
-                            <span className="text-[11px] font-semibold text-ui-muted uppercase block">Deduced Direct Supervisor</span>
+                            <span className="text-[0.6875rem] font-semibold text-ui-muted uppercase block">Deduced Direct Supervisor</span>
                             <p className="text-xs text-ui-body mt-0.5 font-medium">{parsedRecon.department_intel.hiring_manager_profile}</p>
                           </div>
                         )}
@@ -1228,7 +1228,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                         )}
                       </div>
 
-                      <div className="pt-2 border-t border-ui-line-soft text-[11px] text-ui-muted flex items-center justify-between">
+                      <div className="pt-2 border-t border-ui-line-soft text-[0.6875rem] text-ui-muted flex items-center justify-between">
                         <span>Injected into Knock Outreach</span>
                         <span className="text-ui-ink-emerald-400 font-semibold">Active Fuel</span>
                       </div>
@@ -1245,13 +1245,13 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                         {parsedRecon.strategic_positioning_for_candidate.tailor_summary_angle && (
                           <div className="bg-ui-panel/70 p-3 rounded-lg border border-ui-line-soft space-y-1">
-                            <span className="text-ui-ink-emerald-400 font-semibold block text-[11px]">📄 Tailor Summary Angle:</span>
+                            <span className="text-ui-ink-emerald-400 font-semibold block text-[0.6875rem]">📄 Tailor Summary Angle:</span>
                             <p className="text-ui-body leading-relaxed">{parsedRecon.strategic_positioning_for_candidate.tailor_summary_angle}</p>
                           </div>
                         )}
                         {parsedRecon.strategic_positioning_for_candidate.cover_letter_hook_angle && (
                           <div className="bg-ui-panel/70 p-3 rounded-lg border border-ui-line-soft space-y-1">
-                            <span className="text-ui-ink-amber-400 font-semibold block text-[11px]">✉️ Cover Letter Problem-First Hook:</span>
+                            <span className="text-ui-ink-amber-400 font-semibold block text-[0.6875rem]">✉️ Cover Letter Problem-First Hook:</span>
                             <p className="text-ui-body leading-relaxed">{parsedRecon.strategic_positioning_for_candidate.cover_letter_hook_angle}</p>
                           </div>
                         )}
@@ -1292,7 +1292,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                       <Sparkles className="h-4 w-4 text-ui-ink-blue-400" />
                       AI Agent Recon Instructions (LinkedIn MCP)
                     </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-ui-fill-blue-500/10 text-ui-ink-blue-300 border border-ui-line-blue-500/30">
+                    <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded bg-ui-fill-blue-500/10 text-ui-ink-blue-300 border border-ui-line-blue-500/30">
                       doorknock-scout
                     </span>
                   </div>
@@ -1306,9 +1306,9 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                 </div>
                 <div className="bg-ui-page/80 p-2.5 rounded-lg border border-ui-line-soft flex items-center justify-between gap-3 text-xs font-mono text-ui-body select-text">
                   <span className="text-ui-ink-amber-300 truncate">{`scout gatekeepers for job ${activeJob?.id} (${activeJob?.company} - ${activeJob?.title})`}</span>
-                  <span className="text-[10px] text-ui-subtle font-sans shrink-0">Paste into Antigravity or Codex CLI</span>
+                  <span className="text-[0.625rem] text-ui-subtle font-sans shrink-0">Paste into Antigravity or Codex CLI</span>
                 </div>
-                <p className="text-[11px] text-ui-muted leading-relaxed">
+                <p className="text-[0.6875rem] text-ui-muted leading-relaxed">
                   💡 The AI Agent invokes <code className="text-ui-body">linkedin-mcp-server</code> safely, discovers Hiring Manager / Recruiter / Peer, and has full authority to rewrite/update the DoorKnock DB via <code className="text-ui-body">POST /api/jobs/{'{job_id}'}/contacts</code>.
                 </p>
               </div>
@@ -1423,7 +1423,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-ui-heading">{contact.name}</span>
-                            <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-ui-raised text-ui-ink-amber-300 border border-ui-line">
+                            <span className="text-[0.625rem] uppercase font-semibold px-2 py-0.5 rounded bg-ui-raised text-ui-ink-amber-300 border border-ui-line">
                               {contact.contact_type.replace('_', ' ')}
                             </span>
                           </div>
@@ -1440,7 +1440,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                               </a>
                             )}
                             {contact.email && (
-                              <span className="text-ui-muted flex items-center gap-1 font-mono text-[11px]">
+                              <span className="text-ui-muted flex items-center gap-1 font-mono text-[0.6875rem]">
                                 <Mail className="h-3 w-3 text-ui-subtle" /> {contact.email}
                               </span>
                             )}
@@ -1490,11 +1490,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                                         <span className="text-xs font-bold text-ui-heading capitalize">
                                           {isConnect ? 'LinkedIn Connection Note' : 'InMail / Cold Email'}
                                         </span>
-                                        <span className="text-[10px] text-ui-muted block mt-0.5">
+                                        <span className="text-[0.625rem] text-ui-muted block mt-0.5">
                                           {isConnect ? 'Strictly ≤ 300 characters' : '80–120 words (Problem-First)'}
                                         </span>
                                       </div>
-                                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                                      <span className={`text-[0.625rem] font-mono px-2 py-0.5 rounded border ${
                                         isConnect
                                           ? (charCount <= 300 ? 'bg-ui-page text-ui-ink-emerald-400 border-ui-line-soft' : 'bg-ui-fill-red-950 text-ui-ink-red-400 border-ui-line-red-800')
                                           : 'bg-ui-page text-ui-ink-blue-400 border-ui-line-soft'
@@ -1516,11 +1516,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
                                   <div className="pt-2 border-t border-ui-line-soft/80 flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-1.5 text-xs">
-                                      <span className="text-ui-subtle text-[11px]">Status:</span>
+                                      <span className="text-ui-subtle text-[0.6875rem]">Status:</span>
                                       <select
                                         value={msg.status}
                                         onChange={(e) => handleUpdateMessageStatus(msg.id, e.target.value)}
-                                        className="bg-ui-page border border-ui-line text-ui-body text-[11px] rounded px-2 py-0.5 focus:outline-none focus:border-ui-line-amber-500"
+                                        className="bg-ui-page border border-ui-line text-ui-body text-[0.6875rem] rounded px-2 py-0.5 focus:outline-none focus:border-ui-line-amber-500"
                                       >
                                         <option value="draft">Draft</option>
                                         <option value="ready_to_send">Ready to Send</option>
@@ -1529,7 +1529,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                                         <option value="ignored">Ignored</option>
                                       </select>
                                       {msg.sent_at && (
-                                        <span className="text-[10px] text-ui-ink-emerald-400">✓ Sent</span>
+                                        <span className="text-[0.625rem] text-ui-ink-emerald-400">✓ Sent</span>
                                       )}
                                     </div>
 

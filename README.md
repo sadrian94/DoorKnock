@@ -93,6 +93,14 @@ In **Settings → Appearance**, choose **Classic** (the original, default style)
 
 Appearance styles use shared `ui-*` color roles in `frontend/tailwind.config.js`. Their fallbacks preserve Classic's colors; `frontend/src/appearance.css` defines the opt-in Calm overrides. Keep new interface colors in these roles, including colored status labels and button foregrounds. The early `appearance-init.js` script applies preferences before React loads.
 
+Both styles use a 125% root font size so text, controls, icons, spacing, and content widths grow together. Use `rem` for text and interface dimensions, including small labels, so they follow this shared scale and browser font preferences. Document PDFs retain their published dimensions.
+
+### Daily workspace
+
+The Dashboard starts with **Today’s work**: dated actions are ordered by date, then action priority, with undated record reviews last. **Upcoming** shows later scheduled actions. Select a task to see its history, published documents, matched email references, and existing drafts. **Save & next** records the event you confirm and moves to the next visible application. **Later** defaults to seven calendar days ahead; **Pause tracking** preserves the application stage. The latest newly recorded update can be undone using the existing reversible timeline correction.
+
+Draft working copies and interview preparation checkboxes last only while this Dashboard is open. Copying text, opening an email, and checking preparation items never records sent outreach or a completed interview. Email decisions remain in **Gmail application updates**, with their existing confirmation steps. The workspace works in Classic and Calm.
+
 ### Time zone
 
 Choose the local time zone in **Settings → Time zone**, or select **Use device time zone** and save. The default is `America/Chicago`. The saved preference applies to displayed event dates, the dashboard, follow-up calendar calculations, and dates in new documents and workspace names. Daylight saving time is automatic. Settings are stored locally in the Git-ignored `workspace/time-settings.json`.

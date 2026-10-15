@@ -46,7 +46,7 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:flex-wrap md:items-center justify-between gap-4 mb-8">
         <div>
           <h2 className="text-2xl font-bold text-ui-heading tracking-tight">Saved & Ready Targets</h2>
           <p className="text-sm text-ui-muted mt-1">
@@ -54,15 +54,15 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative">
+        <div className="flex max-w-full flex-wrap items-center gap-3">
+          <div className="relative min-w-0 w-full sm:w-auto">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ui-muted" />
             <input
               type="text"
               placeholder="Search title, company, or city..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-ui-panel border border-ui-line text-ui-secondary text-sm rounded-xl pl-10 pr-4 py-2 w-64 md:w-80 focus:outline-none focus:border-ui-line-amber-500 transition shadow-sm"
+              className="bg-ui-panel border border-ui-line text-ui-secondary text-sm rounded-xl pl-10 pr-4 py-2 w-full sm:w-64 md:w-80 max-w-full focus:outline-none focus:border-ui-line-amber-500 transition shadow-sm"
             />
           </div>
 
@@ -129,7 +129,7 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
           ) : null}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredJobs.map((job) => {
             const salary = formatSalary(job);
             const triageBadge = (() => {
@@ -186,12 +186,12 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
               >
                 <div>
                   {/* Top Bar: Company & Triage Verdict */}
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-ui-raised flex items-center justify-center text-ui-body border border-ui-line">
+                  <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                    <div className="flex min-w-0 max-w-full items-center gap-2">
+                      <div className="h-8 w-8 shrink-0 rounded-lg bg-ui-raised flex items-center justify-center text-ui-body border border-ui-line">
                         <Building2 className="h-4 w-4" />
                       </div>
-                      <span className="text-sm font-semibold text-ui-body truncate max-w-[150px]">
+                      <span className="text-sm font-semibold text-ui-body truncate max-w-[9.375rem]">
                         {job.company}
                       </span>
                     </div>
@@ -216,7 +216,7 @@ export const SavedJobsView: React.FC<SavedJobsViewProps> = ({
                     {job.location && (
                       <span className="flex items-center gap-1 bg-ui-raised/80 px-2 py-0.5 rounded-md border border-ui-line/60">
                         <MapPin className="h-3 w-3 text-ui-subtle" />
-                        <span className="truncate max-w-[120px]">{job.location}</span>
+                        <span className="truncate max-w-[7.5rem]">{job.location}</span>
                       </span>
                     )}
 

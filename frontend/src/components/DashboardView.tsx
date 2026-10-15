@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { ArrowUpRight, CalendarClock, RefreshCw } from 'lucide-react';
+import React from 'react';
+import { RefreshCw } from 'lucide-react';
 import type { DashboardSummary } from '../types';
 import { useTimeSettings } from '../timeSettings';
 import { formatDate } from '../time';
-import { NextActionPanel } from './NextActionPanel';
+import { DailyActions } from './DailyActions';
 
 interface DashboardViewProps {
   data: DashboardSummary | null;
@@ -32,11 +32,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const { settings } = useTimeSettings();
   const displayDate = (value: string) => formatDate(value, settings.timezone, { month: 'short', day: 'numeric' });
-  const [showAllAttention, setShowAllAttention] = useState(false);
   if (isLoading && !data) {
     return <div className="p-12 text-center text-ui-muted">Loading dashboard…</div>;
   }
-  if (hasError) {
+  if (hasError && !data) {
     return (
       <div className="max-w-7xl mx-auto px-6 py-12 text-ui-body">
         <p>Dashboard data could not be loaded.</p>
@@ -61,13 +60,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-ui-heading">Dashboard</h2>
-          <p className="mt-1 text-sm text-ui-muted">Application activity and items to review.</p>
+          <p className="mt-1 text-sm text-ui-muted">Work through today’s actions, then review your application activity.</p>
         </div>
         <button onClick={onRetry} disabled={isLoading}
           className="flex items-center gap-2 rounded-lg border border-ui-line px-3 py-2 text-sm text-ui-body hover:bg-ui-panel disabled:opacity-50">
           <RefreshCw className="h-4 w-4" /> Refresh
         </button>
       </div>
+
+      {hasError && <p role="alert" className="text-sm text-ui-ink-red-300">The latest dashboard refresh failed. The last loaded records are shown; refresh before recording more progress.</p>}
+      <DailyActions refreshToken={data} items={data.scheduled_items || data.attention_items} onSelectJob={onSelectJob} onRecorded={onApplicationsChanged} />
 
       <section aria-label="Application overview" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => (
@@ -88,7 +90,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {data.weekly_applications.map((week) => (
               <div key={week.week_start} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
                 title={`Week of ${week.week_start}: ${week.count} applications`}>
-                <span className="text-[10px] tabular-nums text-ui-body">{week.count || ''}</span>
+                <span className="text-[0.625rem] tabular-nums text-ui-body">{week.count || ''}</span>
                 <div className="w-full max-w-9 rounded-t bg-ui-fill-amber-500/85"
                   style={{ height: `${week.count ? Math.max(8, (week.count / weeklyMax) * 160) : 2}px` }} />
               </div>
@@ -96,7 +98,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <div className="mt-2 flex gap-2">
             {data.weekly_applications.map((week, index) => (
-              <span key={week.week_start} className="min-w-0 flex-1 text-center text-[10px] text-ui-subtle">
+              <span key={week.week_start} className="min-w-0 flex-1 text-center text-[0.625rem] text-ui-subtle">
                 {index % 2 === 0 ? displayDate(week.week_start) : ''}
               </span>
             ))}
@@ -127,45 +129,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </section>
       </div>
 
-      <section className="rounded-2xl border border-ui-line-soft bg-ui-panel/70 p-5">
-        <div className="flex items-center gap-2">
-          <CalendarClock className="h-5 w-5 text-ui-ink-amber-400" />
-          <h3 className="font-semibold text-ui-heading">Next actions</h3>
-        </div>
-        <p className="mt-1 text-xs text-ui-muted">Weekdays only · employer timelines take priority · pausing reminders keeps your application stage.</p>
-        {data.attention_items.length === 0 ? (
-          <p className="mt-5 text-sm text-ui-subtle">No next actions due. Paused applications remain in your pipeline.</p>
-        ) : (
-          <div className="mt-4 divide-y divide-ui-line-soft">
-            {(showAllAttention ? data.attention_items : data.attention_items.slice(0, 8)).map((item) => (
-              <div key={item.application_id}><button onClick={() => onSelectJob(item.job_id)}
-                className="flex w-full items-center justify-between gap-4 py-3 text-left hover:text-ui-heading focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ink-amber-500">
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-ui-secondary">{item.title}</span>
-                  <span className="block truncate text-xs text-ui-subtle">{item.company}</span>
-                  <span className="mt-1 block text-xs text-ui-muted">{item.reason}</span>
-                  <span className="block text-[11px] text-ui-subtle">Based on: {item.basis}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-3 text-xs text-ui-muted">
-                  <span className="max-w-44 text-right">{item.label}
-                    <span className="block">{item.date ? displayDate(item.date) : 'Confirm details'}</span>
-                    {item.due_date && <span className="block">{item.kind === 'interview' ? 'Interview' : 'Deadline'} {displayDate(item.due_date)}</span>}
-                  </span>
-                  <ArrowUpRight className="h-4 w-4" />
-                </span>
-              </button>
-              <NextActionPanel key={item.application_id} compact action={item} currentStage={item.current_stage || 'applied'} onRecorded={onApplicationsChanged} />
-              </div>
-            ))}
-          </div>
-        )}
-        {data.attention_items.length > 8 && (
-          <button onClick={() => setShowAllAttention(!showAllAttention)}
-            className="mt-4 text-sm font-medium text-ui-ink-amber-400 hover:text-ui-ink-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ink-amber-500">
-            {showAllAttention ? 'Show fewer' : `Show all ${data.attention_items.length} items`}
-          </button>
-        )}
-      </section>
+
     </div>
   );
 };

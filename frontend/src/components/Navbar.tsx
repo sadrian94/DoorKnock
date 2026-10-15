@@ -37,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* View Switcher Tabs */}
-        <div className="flex items-center overflow-x-auto bg-ui-page p-1 rounded-xl border border-ui-line-soft shadow-inner">
+        <div className="flex max-w-full items-center overflow-x-auto bg-ui-page p-1 rounded-xl border border-ui-line-soft shadow-inner">
           <button
             onClick={() => onTabChange('dashboard')}
             className={`flex shrink-0 items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
