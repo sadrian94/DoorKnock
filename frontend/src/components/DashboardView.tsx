@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { RefreshCw } from 'lucide-react';
 import type { DashboardSummary } from '../types';
 import { useTimeSettings } from '../timeSettings';
 import { formatDate } from '../time';
 import { DailyActions } from './DailyActions';
+import { GmailUpdates } from './GmailUpdates';
 
 interface DashboardViewProps {
   data: DashboardSummary | null;
@@ -12,6 +13,7 @@ interface DashboardViewProps {
   onRetry: () => void;
   onSelectJob: (jobId: string) => void;
   onApplicationsChanged: () => Promise<void>;
+  onOpenSettings: () => void;
 }
 
 const STAGE_LABELS: Record<string, string> = {
@@ -28,10 +30,21 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
-  data, isLoading, hasError, onRetry, onSelectJob, onApplicationsChanged,
+  data, isLoading, hasError, onRetry, onSelectJob, onApplicationsChanged, onOpenSettings,
 }) => {
   const { settings } = useTimeSettings();
+  const tasksRef = useRef<HTMLDivElement>(null);
+  const gmailRef = useRef<HTMLDivElement>(null);
   const displayDate = (value: string) => formatDate(value, settings.timezone, { month: 'short', day: 'numeric' });
+  const jumpTo = (target: HTMLDivElement | null) => {
+    if (!target) return;
+    const headerHeight = document.querySelector('header')?.getBoundingClientRect().height || 0;
+    window.scrollTo({
+      top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - headerHeight - 16),
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
+    target.focus({ preventScroll: true });
+  };
   if (isLoading && !data) {
     return <div className="p-12 text-center text-ui-muted">Loading dashboard…</div>;
   }
@@ -69,19 +82,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {hasError && <p role="alert" className="text-sm text-ui-ink-red-300">The latest dashboard refresh failed. The last loaded records are shown; refresh before recording more progress.</p>}
-      <DailyActions refreshToken={data} items={data.scheduled_items || data.attention_items} onSelectJob={onSelectJob} onRecorded={onApplicationsChanged} />
+      <div className="space-y-4">
+        <dl aria-label="Application overview" className="flex flex-wrap items-center gap-x-8 gap-y-3 border-y border-ui-line-soft py-3">
+          {cards.map((card) => (
+            <div key={card.label} title={card.note} className="flex items-baseline gap-2">
+              <dt className="text-sm text-ui-muted">{card.label}<span className="sr-only"> · {card.note}</span></dt>
+              <dd className="text-lg font-semibold tabular-nums text-ui-heading">{card.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <nav aria-label="Dashboard shortcuts" className="flex flex-wrap items-center gap-3">
+          <span className="text-xs text-ui-muted">Jump to</span>
+          <button onClick={() => jumpTo(tasksRef.current)} className="rounded-lg border border-ui-line px-3 py-2 text-sm text-ui-body hover:bg-ui-panel focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ink-amber-400">Today’s work</button>
+          <button onClick={() => jumpTo(gmailRef.current)} className="rounded-lg border border-ui-line px-3 py-2 text-sm text-ui-body hover:bg-ui-panel focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ink-amber-400">Gmail updates</button>
+        </nav>
+      </div>
 
-      <section aria-label="Application overview" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map((card) => (
-          <div key={card.label} className="rounded-2xl border border-ui-line-soft bg-ui-panel/70 p-5">
-            <p className="text-sm text-ui-muted">{card.label}</p>
-            <p className="mt-2 text-3xl font-semibold tabular-nums text-ui-heading">{card.value}</p>
-            <p className="mt-2 text-xs text-ui-subtle">{card.note}</p>
-          </div>
-        ))}
-      </section>
+      <div ref={tasksRef} id="dashboard-today" tabIndex={-1} aria-label="Today’s work area" className="min-w-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ui-ink-amber-400">
+        <DailyActions refreshToken={data} items={data.scheduled_items || data.attention_items} onSelectJob={onSelectJob} onRecorded={onApplicationsChanged} />
+      </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div ref={gmailRef} id="dashboard-gmail" tabIndex={-1} aria-label="Gmail work area" className="min-w-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ui-ink-amber-400">
+        <GmailUpdates onApplicationsChanged={onApplicationsChanged} onOpenSettings={onOpenSettings} />
+      </div>
+
+      <details className="rounded-2xl border border-ui-line-soft bg-ui-panel/30">
+        <summary className="cursor-pointer rounded-2xl p-5 text-sm font-semibold text-ui-heading focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ink-amber-400">Trends &amp; pipeline <span className="ml-2 text-xs font-normal text-ui-muted">Weekly applications and current stages</span></summary>
+        <div className="grid gap-6 px-5 pb-5 lg:grid-cols-2">
         <section className="min-w-0 rounded-2xl border border-ui-line-soft bg-ui-panel/70 p-5" aria-label="Weekly applications sent">
           <h3 className="font-semibold text-ui-heading">Applications sent by week</h3>
           <p className="mt-1 text-xs text-ui-muted">Last 12 calendar weeks · based on recorded applied dates</p>
@@ -127,9 +154,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           )}
         </section>
-      </div>
-
-
+        </div>
+      </details>
     </div>
   );
 };

@@ -1,11 +1,14 @@
 import httpx
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import HTMLResponse
+from datetime import date
+from typing import Literal
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from .. import gmail_sync
 
 router = APIRouter(prefix="/api/gmail", tags=["gmail"])
+PREVIEW_HEADERS = {'Cache-Control': 'no-store, private', 'Pragma': 'no-cache'}
 
 
 class ScanRequest(BaseModel):
@@ -19,11 +22,13 @@ class ReviewDecision(BaseModel):
     action: str
     application_id: str | None = None
     to_stage: str | None = None
+    due_date: date | None = None
+    outcome: Literal['rejected', 'withdrawn', 'offer_accepted', 'offer_declined'] | None = None
 
 
 @router.get("/status")
 def status():
-    return {"configured": gmail_sync.configured(), "connected": gmail_sync.connected()}
+    return {"configured": gmail_sync.configured(), **gmail_sync.connection_status()}
 
 
 @router.post("/connect")
@@ -61,14 +66,41 @@ def messages(application_id: str | None = None):
 
 
 @router.get("/reviews")
-def reviews():
-    return gmail_sync.pending_reviews()
+def reviews(status: Literal['pending', 'processed'] = 'pending', offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100)):
+    return gmail_sync.pending_reviews(limit, status=status, offset=offset)
 
 
 @router.post("/reviews/{message_id}/resolve")
 def resolve_review(message_id: str, decision: ReviewDecision):
     try:
         return gmail_sync.resolve_review(message_id, decision.action,
-                                         decision.application_id, decision.to_stage)
+                                         decision.application_id, decision.to_stage,
+                                         due_date=decision.due_date.isoformat() if decision.due_date else None,
+                                         outcome=decision.outcome)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get('/reviews/{message_id}/preview')
+async def preview_review(message_id: str):
+    try:
+        return JSONResponse(await gmail_sync.preview_message(message_id), headers=PREVIEW_HEADERS)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail='Review item not found', headers=PREVIEW_HEADERS) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc), headers=PREVIEW_HEADERS) from exc
+    except httpx.HTTPStatusError as exc:
+        missing = exc.response.status_code == 404
+        raise HTTPException(status_code=404 if missing else 502,
+                            detail='The original email is no longer available in Gmail.' if missing else 'Could not load email preview. Try again or open the original in Gmail.',
+                            headers=PREVIEW_HEADERS) from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail='Could not load email preview. Try again or open the original in Gmail.', headers=PREVIEW_HEADERS) from exc
+
+
+@router.post('/reviews/{message_id}/undo')
+def undo_review(message_id: str):
+    try:
+        return gmail_sync.undo_review(message_id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

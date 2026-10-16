@@ -22,8 +22,9 @@ def _seed(company="Example Analytics", title="Operations Analyst", stage="applie
 
 def _mail(subject, body, message_id=None, headers=None):
     encoded = base64.urlsafe_b64encode(body.encode()).decode().rstrip("=")
+    message_id = message_id or str(uuid.uuid4())
     return {
-        "id": message_id or str(uuid.uuid4()), "threadId": "synthetic-thread",
+        "id": message_id, "threadId": "synthetic-thread-" + message_id,
         "internalDate": str(int(datetime.now(timezone.utc).timestamp() * 1000)),
         "payload": {"headers": [{"name": "Subject", "value": subject}] + [
             {"name": name, "value": value} for name, value in (headers or {}).items()
@@ -218,3 +219,58 @@ def test_scan_api_enforces_requested_bounds_and_exposes_saved_refs():
         response = client.get("/api/gmail/messages")
         assert response.status_code == 200
         assert "messages" in response.json()
+
+
+@pytest.mark.parametrize("subject,body", [
+    ("Next steps for your Synthetic Orchard onboarding",
+     "Thank you for taking the time to interview with us. You have been approved to join Synthetic Orchard. Book your onboarding session."),
+    ("Confirmed: Onboarding Session with Synthetic Orchard Events",
+     "Your onboarding session with Synthetic Orchard is scheduled for Friday at 1:30pm."),
+    ("Synthetic Orchard interview invitation", "Please choose a time for your interview."),
+])
+def test_company_only_hiring_updates_are_reviewed_without_inventing_a_stage(subject, body):
+    company = "Synthetic Orchard " + str(uuid.uuid4())
+    subject = subject.replace("Synthetic Orchard", company)
+    body = body.replace("Synthetic Orchard", company)
+    app_id = _seed(company=company, title="Operations Specialist: Remote Contract", stage="recruiter_screen")
+    mail = _mail(subject, body)
+    assert _record_message(mail) == {"saved": False, "stage_changed": False, "needs_review": True}
+    assert _record_message(mail)["needs_review"] is False
+    review = next(r for r in pending_reviews()["reviews"] if r["message_id"] == mail["id"])
+    assert review["candidate_application_ids"] == [app_id]
+    assert review["reason_code"] == "company_only"
+    assert review["event_code"] == "related"
+    assert review["proposed_stage"] is None
+    with get_db() as conn:
+        assert conn.execute("SELECT current_stage FROM applications WHERE id=?", (app_id,)).fetchone()[0] == "recruiter_screen"
+        assert conn.execute("SELECT COUNT(*) FROM timeline_events WHERE application_id=?", (app_id,)).fetchone()[0] == 0
+
+
+def test_company_only_match_retains_all_possible_applications():
+    first = _seed(company="Synthetic Pinetree", title="Data Analyst")
+    second = _seed(company="Synthetic Pinetree", title="Operations Specialist")
+    mail = _mail("Synthetic Pinetree onboarding", "Please book your onboarding session with Synthetic Pinetree.")
+    assert _record_message(mail)["needs_review"] is True
+    review = next(r for r in pending_reviews()["reviews"] if r["message_id"] == mail["id"])
+    assert set(review["candidate_application_ids"]) == {first, second}
+    assert review["proposed_stage"] is None
+
+
+def test_company_news_without_hiring_context_is_still_ignored():
+    _seed(company="Synthetic Willow", title="Data Analyst")
+    mail = _mail("News from Synthetic Willow", "See our latest product releases and company news.")
+    assert _record_message(mail) == {"saved": False, "stage_changed": False, "needs_review": False}
+
+
+def test_reply_can_use_existing_thread_without_repeating_company_or_title():
+    app_id = _seed(company="Synthetic Cedar", title="Operations Specialist")
+    first = _mail("Synthetic Cedar Operations Specialist", "We will send you the next steps shortly.")
+    assert _record_message(first)["saved"] is True
+    resolve_review(first["id"], "apply", app_id, "applied")
+    reply = _mail("Re: next steps", "Please use the new link. The documents are attached.")
+    reply["threadId"] = first["threadId"]
+    assert _record_message(reply) == {"saved": False, "stage_changed": False, "needs_review": True}
+    review = next(r for r in pending_reviews()["reviews"] if r["message_id"] == reply["id"])
+    assert review["candidate_application_ids"] == [app_id]
+    assert review["reason_code"] == "thread_context"
+    assert review["proposed_stage"] is None

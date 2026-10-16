@@ -65,10 +65,11 @@ async def serve_spa(full_path: str):
         return JSONResponse(status_code=404, content={"error": "Not found"})
     file_path = _frontend_file(full_path)
     if file_path is not None:
-        return FileResponse(file_path)
+        headers = {"Cache-Control": "no-store"} if file_path.name == "index.html" else None
+        return FileResponse(file_path, headers=headers)
     index_file = _frontend_file("index.html")
     if index_file is not None:
-        return FileResponse(index_file)
+        return FileResponse(index_file, headers={"Cache-Control": "no-store"})
     return JSONResponse(status_code=404, content={"error": "Not found"})
 
 

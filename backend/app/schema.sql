@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS gmail_review_items (
     candidate_application_ids TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     resolved_at TEXT,
+    resolution_metadata TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 

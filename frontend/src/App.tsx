@@ -186,6 +186,7 @@ export const App: React.FC = () => {
             onRetry={fetchDashboard}
             onSelectJob={handleSelectJob}
             onApplicationsChanged={async () => { await Promise.all([fetchDashboard(), fetchKanban(), fetchSavedJobs()]); }}
+            onOpenSettings={() => changeTab('settings')}
           />
         ) : currentTab === 'saved' ? (
           <SavedJobsView
