@@ -1,6 +1,6 @@
 ---
 name: doorknock-cadence
-description: Review application evidence, schedule next actions and draft follow-ups without inferring outcomes from silence. (Pillar 4: 候應)
+description: "Review application evidence, schedule next actions and draft follow-ups without inferring outcomes from silence. (Pillar 4: 候應)"
 version: 2.0.0
 author: DoorKnock Team
 platforms: [windows, macos, linux]

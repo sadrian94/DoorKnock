@@ -1,6 +1,6 @@
 ---
 name: doorknock-knock
-description: Draft high-conversion, low-friction outreach scripts across LinkedIn and email for gatekeepers (Hiring Managers, Recruiters, and Peers) using Sepia De-AI standards. Enforces strict character and word limits with zero autonomous sending. (Pillar 3: 叩門)
+description: "Draft high-conversion, low-friction outreach scripts across LinkedIn and email for gatekeepers (Hiring Managers, Recruiters, and Peers) using Sepia De-AI standards. Enforces strict character and word limits with zero autonomous sending. (Pillar 3: 叩門)"
 version: 1.0.0
 author: DoorKnock Team
 platforms: [windows, macos, linux]

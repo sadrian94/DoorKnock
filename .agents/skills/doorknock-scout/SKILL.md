@@ -1,6 +1,6 @@
 ---
 name: doorknock-scout
-description: Target intelligence and gatekeeper reconnaissance for target employers using linkedin-mcp-server. Discovers hiring managers, technical recruiters, and peers, extracts authentic hooks, and persists contacts. (Pillar 1: 辨門)
+description: "Target intelligence and gatekeeper reconnaissance for target employers using linkedin-mcp-server. Discovers hiring managers, technical recruiters, and peers, extracts authentic hooks, and persists contacts. (Pillar 1: 辨門)"
 version: 1.0.0
 author: DoorKnock Team
 platforms: [windows, macos, linux]
