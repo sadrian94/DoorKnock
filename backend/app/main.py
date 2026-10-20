@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from pathlib import Path
 from .config import CORS_ORIGINS
-from .database import init_db
+from .database import init_db, get_db
 from .api.jobs import router as jobs_router
 from .api.pipeline import router as pipeline_router
 from .api.import_job import router as import_router
@@ -14,9 +14,16 @@ from .api.settings import router as settings_router
 from .api.gmail import router as gmail_router
 from .ai.codex import app_server
 
+def recover_interrupted_recon():
+    # Background tasks belong to this server process and cannot survive restart.
+    with get_db() as conn:
+        conn.execute("UPDATE jobs SET company_recon_status = 'failed' WHERE company_recon_status IN ('pending', 'running')")
+        conn.commit()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    recover_interrupted_recon()
     try:
         yield
     finally:

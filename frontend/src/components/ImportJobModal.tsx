@@ -831,7 +831,7 @@ export const ImportJobModal: React.FC<ImportJobModalProps> = ({
                 disabled={isSaving}
                 className="flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-ui-fill-emerald-600 hover:bg-ui-fill-emerald-500 text-ui-on-color rounded-xl shadow-lg shadow-emerald-950/50 transition disabled:opacity-50 cursor-pointer"
               >
-                <span>{isSaving ? 'Saving...' : 'Save to DoorKnock'}</span>
+                <span>{isSaving ? 'Saving...' : 'Save & Start Company Recon'}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             )}

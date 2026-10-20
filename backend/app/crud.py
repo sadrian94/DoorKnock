@@ -397,7 +397,7 @@ def update_job_company_recon(job_id: str, recon_data: Dict[str, Any]) -> Optiona
         recon_str = json.dumps(recon_data)
         conn.execute("""
             UPDATE jobs
-            SET company_recon_json = ?, updated_at = ?
+            SET company_recon_json = ?, company_recon_status = 'completed', updated_at = ?
             WHERE id = ?
         """, (recon_str, now_str, job_id))
         conn.commit()

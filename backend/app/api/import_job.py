@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from ..clock import utc_now
 from typing import Optional, Dict, Any
 from urllib.parse import quote, unquote, urljoin, urlsplit
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 import httpx
 import httpcore
@@ -19,6 +19,7 @@ from ..ai.gemini import GeminiError
 from ..ai.codex import CodexError
 from ..ai.analyzer import analyze_job_posting
 from ..database import get_db
+from .jobs import run_queued_company_recon
 
 router = APIRouter(prefix="/api/jobs", tags=["import"])
 
@@ -663,7 +664,7 @@ async def analyze_job(req: AnalyzeRequest):
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 @router.post("/import")
-def import_job(req: ImportConfirmedJobRequest):
+def import_job(req: ImportConfirmedJobRequest, background_tasks: BackgroundTasks):
     """Save the analyzed job into DoorKnock database and create an application in 'saved' stage."""
     job_id = str(uuid.uuid4())
     app_id = str(uuid.uuid4())
@@ -707,7 +708,10 @@ def import_job(req: ImportConfirmedJobRequest):
             ) VALUES (?, ?, 'saved', ?, ?)
         """, (app_id, job_id, now_str, now_str))
 
+        conn.execute("UPDATE jobs SET company_recon_status = 'pending' WHERE id = ?", (job_id,))
+
         conn.commit()
 
         job = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
+        background_tasks.add_task(run_queued_company_recon, job_id)
         return {"ok": True, "job": dict(job), "application_id": app_id}

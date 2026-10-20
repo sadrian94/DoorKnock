@@ -12,6 +12,8 @@ def init_db(db_path: Optional[Path] = None):
     with get_db(target_path) as conn:
         with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
             conn.executescript(f.read())
+        if 'company_recon_status' not in {row['name'] for row in conn.execute('PRAGMA table_info(jobs)')}:
+            conn.execute('ALTER TABLE jobs ADD COLUMN company_recon_status TEXT')
         if 'resolution_metadata' not in {row['name'] for row in conn.execute('PRAGMA table_info(gmail_review_items)')}:
             conn.execute('ALTER TABLE gmail_review_items ADD COLUMN resolution_metadata TEXT')
         try:

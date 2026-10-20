@@ -9,6 +9,15 @@ BACKEND_DIR = REPO_ROOT / "backend"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
+
+@pytest.fixture(autouse=True)
+def isolate_recon_provider(monkeypatch):
+    """Imports now trigger recon; never let an ordinary test call a real AI provider."""
+    async def research(**kwargs):
+        return {"company_name": kwargs["company"]}
+
+    monkeypatch.setattr("app.api.jobs.recon_company_and_department", research)
+
 @pytest.fixture(scope="session", autouse=True)
 def isolate_test_db(tmp_path_factory):
     """

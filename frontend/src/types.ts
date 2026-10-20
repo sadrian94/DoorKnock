@@ -20,6 +20,7 @@ export interface Job {
   analysis_json?: string;
   company_recon_json?: string | null;
   company_recon?: CompanyReconData | null;
+  company_recon_status?: 'pending' | 'running' | 'completed' | 'failed' | null;
   status: string;
   created_at: string;
   updated_at: string;

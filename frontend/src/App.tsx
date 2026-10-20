@@ -152,7 +152,7 @@ export const App: React.FC = () => {
   };
 
   const handleJobImported = async () => {
-    showToast('Job analyzed and saved successfully!');
+    showToast('Job saved. Company Recon will run in the background.');
     await fetchSavedJobs();
     await fetchKanban();
     changeTab('saved');

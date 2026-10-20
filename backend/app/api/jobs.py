@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional, Dict, Any
 from ..clock import utc_now
+import asyncio
 import json
 from .. import crud
 from ..database import get_db
@@ -162,27 +163,52 @@ async def rematch_job(job_id: str):
 @router.post("/{job_id}/recon")
 async def run_company_recon(job_id: str):
     """Execute tactical reconnaissance on employer business model and department charter."""
+    return await _run_company_recon(job_id)
+
+
+async def run_queued_company_recon(job_id: str):
+    """Run after import has committed and its response has been sent."""
+    try:
+        await _run_company_recon(job_id, queued=True)
+    except HTTPException:
+        # Status is persisted below. A research failure must not fail a saved import.
+        pass
+
+
+async def _run_company_recon(job_id: str, queued: bool = False):
     job = crud.get_job_by_id(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    try:
-        ai_client = require_ai_client()
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    with get_db() as conn:
+        condition = "company_recon_status = 'pending'" if queued else "COALESCE(company_recon_status, '') NOT IN ('pending', 'running')"
+        claimed = conn.execute(
+            f"UPDATE jobs SET company_recon_status = 'running' WHERE id = ? AND {condition}",
+            (job_id,),
+        ).rowcount
+        conn.commit()
+    if not claimed:
+        raise HTTPException(status_code=409, detail="Company recon is already queued or running")
 
     try:
-        recon_data = await recon_company_and_department(
+        ai_client = require_ai_client()
+        recon_data = await asyncio.wait_for(recon_company_and_department(
             company=job.get("company", ""),
             role_title=job.get("title", ""),
             job_description=job.get("job_description") or job.get("job_brief") or "",
             company_url=job.get("company_url") or job.get("job_url"),
             gemini_client=ai_client,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Company recon failed: {str(e)}")
+        ), timeout=300)
+        updated_job = crud.update_job_company_recon(job_id, recon_data)
+    except (Exception, asyncio.CancelledError) as exc:
+        with get_db() as conn:
+            conn.execute("UPDATE jobs SET company_recon_status = 'failed' WHERE id = ?", (job_id,))
+            conn.commit()
+        if isinstance(exc, asyncio.CancelledError):
+            raise
+        raise HTTPException(status_code=400 if isinstance(exc, ValueError) else 500,
+                            detail="Company recon failed. Check AI settings and retry.") from exc
 
-    updated_job = crud.update_job_company_recon(job_id, recon_data)
     return {"ok": True, "job": updated_job, "recon": recon_data}
 
 @router.get("/{job_id}/recon")

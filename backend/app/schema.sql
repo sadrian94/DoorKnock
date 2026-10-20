@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     suitability_reason TEXT,
     analysis_json TEXT, -- Full structured AI fit breakdown
     company_recon_json TEXT, -- Structured company & department recon intelligence
+    company_recon_status TEXT, -- pending, running, completed, failed; NULL for legacy jobs
     status TEXT NOT NULL DEFAULT 'saved', -- 'saved', 'ready', 'applied', 'in_progress', 'archived'
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))

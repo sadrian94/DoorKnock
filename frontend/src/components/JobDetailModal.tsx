@@ -204,10 +204,33 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
     }
   }, [activeJob?.company_recon, activeJob?.company_recon_json]);
 
-  const [isReconning, setIsReconning] = useState<boolean>(false);
+  const [isSubmittingRecon, setIsReconning] = useState<boolean>(false);
+  const reconPending = activeJob?.company_recon_status === 'pending' || activeJob?.company_recon_status === 'running';
+  const isReconning = isSubmittingRecon || reconPending;
+
+  useEffect(() => {
+    if (!activeJob?.id || !reconPending) return;
+    const jobId = activeJob.id;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const refresh = async () => {
+      try {
+        const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`);
+        if (response.ok) {
+          const updated = await response.json() as Job;
+          if (cancelled) return;
+          setCurrentJob(updated);
+          if (updated.company_recon_status !== 'pending' && updated.company_recon_status !== 'running') return;
+        }
+      } catch { /* Keep the saved job visible while a refresh is unavailable. */ }
+      if (!cancelled) timer = setTimeout(refresh, 2000);
+    };
+    timer = setTimeout(refresh, 2000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [activeJob?.id, reconPending]);
 
   const handleRunRecon = async () => {
-    if (!activeJob?.id) return;
+    if (!activeJob?.id || isReconning) return;
     setIsReconning(true);
     try {
       const res = await fetch(`/api/jobs/${activeJob.id}/recon`, { method: 'POST' });
@@ -704,13 +727,13 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
             >
               <Building2 className={`h-3.5 w-3.5 shrink-0 ${activeTab === 'recon' ? 'text-ui-ink-amber-400' : 'text-ui-muted'}`} />
               <span className="whitespace-nowrap">Company Recon</span>
-              {parsedRecon ? (
+              {parsedRecon && !isReconning && activeJob?.company_recon_status !== 'failed' ? (
                 <span className="px-1 py-0.5 rounded text-[0.5625rem] font-mono font-bold bg-ui-fill-emerald-950 text-ui-ink-emerald-400 border border-ui-line-emerald-800/80 shrink-0">
                   Active
                 </span>
               ) : (
                 <span className="px-1 py-0.5 rounded text-[0.5625rem] font-mono bg-ui-raised text-ui-subtle border border-ui-line/60 shrink-0">
-                  Ready
+                  {isReconning ? 'Running' : activeJob?.company_recon_status === 'failed' ? 'Retry' : 'Ready'}
                 </span>
               )}
             </button>
@@ -1073,7 +1096,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                       <span>Company & Department Recon Intelligence</span>
                       {parsedRecon && (
                         <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded bg-ui-fill-emerald-500/10 text-ui-ink-emerald-300 border border-ui-line-emerald-500/30">
-                          Verified
+                          AI research
                         </span>
                       )}
                     </h3>
@@ -1090,16 +1113,23 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                     className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-ui-fill-amber-500/10 hover:bg-ui-fill-amber-500/20 text-ui-ink-amber-300 border border-ui-line-amber-500/40 transition shadow-sm disabled:opacity-50 cursor-pointer"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${isReconning ? 'animate-spin text-ui-ink-amber-400' : ''}`} />
-                    <span>{isReconning ? 'Executing Recon...' : parsedRecon ? 'Re-run Recon' : 'Run Recon Now'}</span>
+                    <span>{isReconning ? 'Executing Recon...' : activeJob?.company_recon_status === 'failed' ? 'Retry Recon' : parsedRecon ? 'Re-run Recon' : 'Run Recon Now'}</span>
                   </button>
                 </div>
+              </div>
+
+              <div role="status" aria-live="polite" className="text-sm text-ui-body">
+                {isReconning ? 'Company Recon is running. You can close this window; results will be saved to this job.'
+                  : activeJob?.company_recon_status === 'failed' ? 'Company Recon failed or was interrupted. Your job is saved. Check AI settings, then retry.'
+                  : null}
               </div>
 
               {!parsedRecon ? (
                 <div className="text-center py-12 border border-dashed border-ui-line-soft rounded-xl space-y-3 bg-ui-page/40">
                   <Building2 className="h-10 w-10 text-ui-faint mx-auto" />
                   <div>
-                    <p className="text-sm font-semibold text-ui-body">No company reconnaissance performed yet.</p>
+                    <p className="text-sm font-semibold text-ui-body">{isReconning ? 'Researching company and department...'
+                      : activeJob?.company_recon_status === 'failed' ? 'Company research is unavailable.' : 'No company reconnaissance performed yet.'}</p>
                     <p className="text-xs text-ui-subtle mt-1 max-w-md mx-auto">
                       Analyze employer monetization, macro headwinds, target department charter, and hiring manager anxieties to power high-conversion outreach.
                     </p>
@@ -1110,7 +1140,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                     className="px-4 py-2 text-xs font-bold rounded-xl bg-ui-fill-amber-600 hover:bg-ui-fill-amber-500 text-ui-on-action transition shadow-lg shadow-amber-950/50 inline-flex items-center gap-2"
                   >
                     <Sparkles className="h-4 w-4" />
-                    <span>Run Strategic Recon Now</span>
+                    <span>{isReconning ? 'Executing Recon...' : activeJob?.company_recon_status === 'failed' ? 'Retry Company Recon' : 'Run Strategic Recon Now'}</span>
                   </button>
                 </div>
               ) : (
