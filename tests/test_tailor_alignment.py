@@ -7,6 +7,23 @@ import pytest
 from app.tailor import engine
 
 
+def test_rewrite_brief_resolves_supported_sources_without_turning_gaps_into_targets():
+    from copy import deepcopy
+    from app.tailor.alignment import build_rewrite_context, evidence_index
+
+    index = evidence_index(EVIDENCE)
+    before = deepcopy(index)
+    brief = build_rewrite_context(package()["keyword_alignment"], index)
+    targets = json.loads(brief.split("Evidence-grounded rewrite targets:\n", 1)[1])
+    assert [target["keyword"] for target in targets] == ["discrepancies", "data quality"]
+    assert targets[1]["support"] == "transferable"
+    assert targets[1]["boundary"] == "Operational payment records only."
+    assert targets[0]["evidence"]["payment-checks"]["bullet"]["text"] == (
+        "Investigated payment discrepancies by tracing transaction records.")
+    assert targets[0]["placements"] == ["summary", "experiences"]
+    assert index == before
+
+
 EVIDENCE = """experiences:
   - id: exp-operations
     company: Sample Distribution
@@ -165,14 +182,24 @@ async def test_provider_plan_reaches_drafting_and_review(tmp_path, candidate, do
                         row["placements"] = ["paragraphs"]
             if "Review the completed document" in prompt:
                 assert "Completed document:" in prompt and "Transaction records, not product catalogs" in prompt
+                assert "Check rewritten wording against the original source statements" in prompt
+                # The reviewer sees the same normalized content as the renderer.
+                assert 'SQL (coursework)' not in prompt.split("Completed document:\n", 1)[1]
+                if document_type == "resume":
+                    assert '"target_role": "ANALYST"' in prompt
+                else:
+                    assert '"salutation": "Sample Employer Hiring Team"' in prompt
                 return {"claim_review": data["claim_review"]}
             if "Build keyword_alignment" in prompt:
                 return {**data["tailor_strategy"], "keyword_alignment": rows}
             assert "Keyword alignment plan:" in prompt
+            assert "Evidence-grounded rewrite targets:" in prompt
+            assert "Rewrite the selected source statements using supported JD terminology" in prompt
+            assert '"evidence": {"payment-checks":' in prompt
             if "Write only the resume Experience" in prompt:
                 return {"experiences": [], "projects": []}
             if "Write only resume Skills" in prompt:
-                return {"skills": [], "education": [], "certifications": ""}
+                return {"skills": [{"category": "Data", "items": "SQL (coursework)"}], "education": [], "certifications": ""}
             if "Write only the resume Summary" in prompt:
                 return {"summary": data["resume"]["summary"]}
             return {"paragraphs": ["Investigated transaction discrepancies."]}
@@ -201,6 +228,67 @@ def test_skill_refs_and_literal_coverage_do_not_confuse_sql_with_nosql():
     report = keyword_report(rows, {"status": "ready", "findings": []},
         {"summary": "Used NoSQL", "skills": [{"items": "NoSQL"}]}, "resume", "SQL preferred", EVIDENCE, "agent")
     assert report["coverage"][0]["status"] == "could_improve"
+
+
+@pytest.mark.parametrize("section,entry,term", [
+    ("skills", {"category": "Machine Learning", "items": "Python"}, "Machine Learning"),
+    ("experiences", {"company": "Sample Distribution", "title": "Operations Analyst", "bullets": []}, "Operations Analyst"),
+    ("projects", {"name": "Reporting Automation", "bullets": []}, "Reporting Automation"),
+])
+def test_visible_section_headers_are_covered_and_reviewable(section, entry, term):
+    from app.tailor.alignment import keyword_report, validate_claim_review
+    payload = {section: [entry]}
+    rows = [{"keyword": term, "support": "direct", "placements": [section]}]
+    report = keyword_report(rows, {"status": "ready", "findings": []}, payload,
+                            "resume", term, EVIDENCE, "agent")
+    assert report["coverage"][0]["found_in"] == [section]
+    validate_claim_review({"status": "needs_revision", "findings": [{
+        "section": section, "quote": term, "issue": "Unsupported wording",
+        "suggestion": "Use the verified wording",
+    }]}, payload, "resume")
+
+
+@pytest.mark.anyio
+async def test_report_fingerprints_final_render_content(tmp_path, candidate, monkeypatch):
+    import hashlib
+    from copy import deepcopy
+    captured = {}
+    original_compile = engine.compile_document
+
+    def capture(template, context, *args, **kwargs):
+        captured.update(deepcopy(context["resume"]))
+        return original_compile(template, context, *args, **kwargs)
+
+    monkeypatch.setattr(engine, "compile_document", capture)
+    data = package()
+    data["resume"]["skills"] = [{"category": "Data", "items": "SQL (coursework)"}]
+    result = await publish(tmp_path, data)
+    report = json.loads(Path(result["manifest"]["keyword_review"]).read_text(encoding="utf-8"))
+    assert captured["skills"][0]["items"] == "SQL"
+    assert report["document_sha256"] == hashlib.sha256(
+        json.dumps(captured, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def test_hidden_project_metadata_does_not_count_as_visible_coverage():
+    from app.tailor.alignment import keyword_report
+    rows = [{"keyword": "SQL", "support": "direct", "placements": ["projects"]}]
+    payload = {"projects": [{"name": "Reporting", "tech_stack": "SQL",
+                              "url": "https://example.com/SQL", "bullets": ["Built reports."]}]}
+    report = keyword_report(rows, {"status": "ready", "findings": []}, payload,
+                            "resume", "SQL", EVIDENCE, "agent")
+    assert report["coverage"][0]["found_in"] == []
+
+
+@pytest.mark.parametrize("document_type,payload,quote", [
+    ("resume", {"target_role": "Senior Analyst"}, "Senior Analyst"),
+    ("cover_letter", {"subject_role": "Senior Analyst"}, "Senior Analyst"),
+])
+def test_visible_document_header_can_receive_claim_findings(document_type, payload, quote):
+    from app.tailor.alignment import validate_claim_review
+    validate_claim_review({"status": "needs_revision", "findings": [{
+        "section": "header", "quote": quote, "issue": "Review the role wording",
+        "suggestion": "Use the supported role wording",
+    }]}, payload, document_type)
 
 
 @pytest.mark.parametrize("review", [

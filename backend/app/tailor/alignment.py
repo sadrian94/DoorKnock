@@ -97,13 +97,23 @@ def validate_claim_review(review, payload: dict, document_type: str) -> None:
 
 
 def document_sections(payload: dict, document_type: str) -> dict[str, str]:
+    """Visible authored text only; hidden metadata must not count as coverage."""
+    def fields(entry, keys):
+        return "\n".join(str(entry.get(key, "")) for key in keys)
+
     if document_type == "cover_letter":
-        return {"paragraphs": "\n".join(payload.get("paragraphs", []))}
+        return {"header": fields(payload, ("recipient_title", "company_name", "company_location",
+                                           "date", "subject_role", "salutation")),
+                "paragraphs": "\n".join(payload.get("paragraphs", []))}
     return {
+        "header": payload.get("target_role", ""),
         "summary": payload.get("summary", ""),
-        "experiences": "\n".join(b for e in payload.get("experiences", []) for b in e.get("bullets", [])),
-        "projects": "\n".join(b for p in payload.get("projects", []) for b in p.get("bullets", [])),
-        "skills": "\n".join(s.get("items", s.get("skills", "")) for s in payload.get("skills", [])),
+        "experiences": "\n".join(fields(e, ("company", "title", "dates", "location")) + "\n" +
+                                      "\n".join(e.get("bullets", [])) for e in payload.get("experiences", [])),
+        "projects": "\n".join(fields(p, ("name",)) + "\n" + "\n".join(p.get("bullets", []))
+                                  for p in payload.get("projects", [])),
+        "skills": "\n".join(s.get("category", "") + "\n" + s.get("items", s.get("skills", ""))
+                                for s in payload.get("skills", [])),
     }
 
 
@@ -127,6 +137,20 @@ def keyword_report(rows, review, payload: dict, document_type: str, posting: str
                         "Provider or agent claim review still requires human verification.",
     }
 
-ALIGNMENT_INSTRUCTION = '''Build keyword_alignment from the main requirements of the supplied posting, including important unsupported requirements. No keyword quotas. Each entry has {"keyword": "<exact JD term>", "requirement": "<verbatim JD excerpt containing that term>", "support": "direct|transferable|unsupported", "evidence_ids": ["<ID from evidence index>"], "placements": ["<allowed section>"], "boundary": "<original domain, tools, ownership, results and provenance limits>"}. Use specific bullet IDs when possible. Direct means evidence supports the requirement in its stated context, not merely a matching word. Transferable preserves the original work domain. Coursework or portfolio tools do not establish paid or production use. Unsupported entries have empty evidence_ids and placements. Never infer achievements from tags, JD text or company recon. Return at least one entry for a nonempty posting.'''
+REWRITE_INSTRUCTION = '''Rewrite the selected source statements using supported JD terminology in the planned sections. Treat alignment as a writing brief: identify the action, object, method and supported result in the linked original evidence, then express that same work with the relevant JD verbs and nouns. You may change sentence structure and emphasis; do not copy the evidence verbatim merely because it uses different words from the posting. Preserve the original domain, tools, employer/project, responsibility, seniority, provenance and metric scope. A transferable example must still describe its original work context. If a JD term would change the meaning or imply an unsupported capability, use the accurate source wording and leave the term as a gap. Unsupported requirements are not rewrite targets. Never add tools, ownership, outcomes or stronger claims to fit a keyword. Keep exact employment and credential facts unchanged; adapt skill names only when equivalent. Write natural sentences, without keyword lists or copied JD requirements. The Summary synthesizes the selected experience rather than repeating rewritten bullets. Write only the requested document fields; never modify the evidence bank.'''
 
-REVIEW_INSTRUCTION = '''Review the completed document against evidence, posting and keyword boundaries. Check every claim, not just mapped keywords. Flag inflated domain, ownership, tools, seniority or results; coursework/portfolio recast as paid work; and speculative employer problems asserted as facts. A valid evidence ID alone is not proof. Supported JD terms and transferable examples are allowed when their original scope remains clear. Missing keywords alone are advisory, not a claim violation. Return {"claim_review": {"status": "ready|needs_revision", "findings": [{"section": "<document section>", "quote": "<exact document excerpt>", "issue": "<unsupported implication>", "suggestion": "<evidence-safe correction>"}]}}. Ready requires no findings; needs_revision requires concrete findings. Do not rewrite the document or invent a score.'''
+
+def build_rewrite_context(rows: list[dict], index: dict) -> str:
+    """Resolve a validated alignment plan into original, eligible rewrite sources."""
+    targets = [
+        {"keyword": row["keyword"], "requirement": row["requirement"],
+         "support": row["support"], "placements": row["placements"], "boundary": row["boundary"],
+         "evidence": {ref: index[ref] for ref in row["evidence_ids"]}}
+        for row in rows if row["support"] != "unsupported"
+    ]
+    return "\n" + REWRITE_INSTRUCTION + "\nEvidence-grounded rewrite targets:\n" + json.dumps(targets, ensure_ascii=False)
+
+
+ALIGNMENT_INSTRUCTION = '''Build keyword_alignment from the main requirements of the supplied posting, including important unsupported requirements. This plan will guide meaning-preserving rewrites of the original evidence into JD language. Select specific source statements whose actions and objects can honestly be expressed with the target term, and use boundary to state what that rewrite must preserve or must not imply. No keyword quotas. Each entry has {"keyword": "<exact JD term>", "requirement": "<verbatim JD excerpt containing that term>", "support": "direct|transferable|unsupported", "evidence_ids": ["<ID from evidence index>"], "placements": ["<allowed section>"], "boundary": "<original domain, tools, ownership, results and provenance limits>"}. Use specific bullet IDs when possible. Direct means evidence supports the requirement in its stated context, not merely a matching word. Transferable preserves the original work domain. Coursework or portfolio tools do not establish paid or production use. Unsupported entries have empty evidence_ids and placements. Never infer achievements from tags, JD text or company recon. Return at least one entry for a nonempty posting.'''
+
+REVIEW_INSTRUCTION = '''Review the completed document against evidence, posting and keyword boundaries. Check every claim, not just mapped keywords. Check rewritten wording against the original source statements and each boundary: JD synonyms are allowed only when they preserve the actual action, object, domain, responsibility and result. Flag a wording change that turns transferable work into direct domain experience. Do not demand verbatim copying of source evidence. Flag inflated domain, ownership, tools, seniority or results; coursework/portfolio recast as paid work; and speculative employer problems asserted as facts. A valid evidence ID alone is not proof. Supported JD terms and transferable examples are allowed when their original scope remains clear. Missing keywords alone are advisory, not a claim violation. Return {"claim_review": {"status": "ready|needs_revision", "findings": [{"section": "<document section>", "quote": "<exact document excerpt>", "issue": "<unsupported implication>", "suggestion": "<evidence-safe correction>"}]}}. Ready requires no findings; needs_revision requires concrete findings. Do not rewrite the document or invent a score.'''

@@ -50,7 +50,7 @@ The pipeline gives you the wider view, from saved roles through interviews and o
 
 Import a job URL or paste its description, review the extracted text, and compare it with your evidence. The analysis distinguishes direct experience, transferable work, and gaps. A match score is a prompt for judgment; it is not an interview probability.
 
-Tailor a resume or a cover letter from that evidence. Keyword alignment and claim review help expose unsupported wording before publication. Typst handles the layout; published versions stay available when you revise. PDFs use selectable text and standard sections. Content and visual checks are still part of the work.
+Tailor a resume or a cover letter from that evidence. Keyword alignment guides rewrites of relevant source statements using supported terms from the job description, preserving the original work, scope, and results. The evidence bank keeps its original wording. Claim review checks the rewritten claims before publication. Typst handles the layout; published versions stay available when you revise. PDFs use selectable text and standard sections. Content and visual checks are still part of the work.
 
 ### Work in the app, or with your agent
 

@@ -20,6 +20,7 @@ from .validation import validate_resume_evidence
 from .alignment import (
     ALIGNMENT_INSTRUCTION, REVIEW_INSTRUCTION, evidence_index,
     validate_alignment, validate_claim_review, keyword_report,
+    build_rewrite_context,
 )
 from .naming import (
     sanitize_slug,
@@ -313,6 +314,7 @@ async def tailor_application_documents(
             alignment = strategy.pop("keyword_alignment")
             validate_alignment(alignment, raw_text, index, document_type)
             context += "\nKeyword alignment plan:\n" + json.dumps(alignment, ensure_ascii=False)
+            context += build_rewrite_context(alignment, index)
             context += "\nUse supported JD terms naturally in the planned sections. Preserve each boundary; never place an unsupported requirement as a candidate skill."
             body = await _generate_part(client, context + "\nSelected positioning:\n" + json.dumps(strategy, ensure_ascii=False),
         resume_sections_instruction, ("experiences", "projects"))
@@ -329,6 +331,7 @@ async def tailor_application_documents(
             alignment = plan["keyword_alignment"]
             validate_alignment(alignment, raw_text, index, document_type)
             context += "\nKeyword alignment plan:\n" + json.dumps(alignment, ensure_ascii=False)
+            context += build_rewrite_context(alignment, index)
             cover_letter_prompt = (
                 "Write an authentic, highly compelling single-page cover letter in 3-4 concise paragraphs following the Sepia professional standard.\n"
                 "Architecture:\n"
@@ -343,22 +346,6 @@ async def tailor_application_documents(
                 'Return {"paragraphs": ["<p1>", "<p2>", "<p3>", "<p4>"], "recipient_title": "<targeted title e.g. Engineering Hiring Team>", "salutation": "<clean name without Dear, e.g. TRG Engineering Team>"}.'
             )
             letter_payload = await _generate_part(client, context, cover_letter_prompt, ("paragraphs",))
-
-        payload = resume_payload if document_type == "resume" else letter_payload
-        reviewed = await _generate_part(client,
-            context + "\nCompleted document:\n" + json.dumps(payload, ensure_ascii=False),
-            REVIEW_INSTRUCTION, ("claim_review",))
-        claim_review = reviewed["claim_review"]
-
-    payload = resume_payload if document_type == "resume" else letter_payload
-    if alignment is not None or claim_review is not None:
-        validate_claim_review(claim_review, payload, document_type)
-    review_report = keyword_report(alignment, claim_review, payload, document_type, raw_text, candidate_evidence,
-                                   "agent" if authored_documents is not None else "provider")
-    if review_report["status"] == "needs_revision":
-        return {"success": False, "application_dir": str(app_dir), "document_type": document_type,
-                "pdf": None, "manifest": None, "keyword_review": review_report,
-                "error": "Claim review requires revision before publication"}
 
     # Step 2: Prepare Contexts
     target_role_header = (strategy or {}).get("target_role_header") or title.upper()
@@ -409,6 +396,22 @@ async def tailor_application_documents(
             "paragraphs": (letter_payload or {}).get("paragraphs", []),
         },
     }
+
+    # Review and fingerprint the same finalized document content passed to Typst.
+    payload = resume_context["resume"] if document_type == "resume" else letter_context["letter"]
+    if authored_documents is None:
+        reviewed = await _generate_part(client,
+            context + "\nCompleted document:\n" + json.dumps(payload, ensure_ascii=False),
+            REVIEW_INSTRUCTION, ("claim_review",))
+        claim_review = reviewed["claim_review"]
+    if alignment is not None or claim_review is not None:
+        validate_claim_review(claim_review, payload, document_type)
+    review_report = keyword_report(alignment, claim_review, payload, document_type, raw_text, candidate_evidence,
+                                   "agent" if authored_documents is not None else "provider")
+    if review_report["status"] == "needs_revision":
+        return {"success": False, "application_dir": str(app_dir), "document_type": document_type,
+                "pdf": None, "manifest": None, "keyword_review": review_report,
+                "error": "Claim review requires revision before publication"}
 
     if document_type == "resume":
         validate_resume_evidence(resume_payload, candidate_evidence)
