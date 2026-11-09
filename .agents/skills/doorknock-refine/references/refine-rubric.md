@@ -8,8 +8,8 @@ Use this rubric to find meaningful evidence gaps in `workspace/master_resume/mas
 
 | Flaw | Definition | Bad Example | Refinement Remedy |
 |---|---|---|---|
-| **Unclear contribution** | A duty is listed without the candidate's own action. | *"Responsible for cleaning customer billing records in Excel."* | Ask what the candidate changed, checked, or delivered; do not assume a business loss or result. |
-| **Unclear result** | Claiming improvement without a basis or observable change. | *"Optimized the process."* | Ask what changed and how it was checked; a documented qualitative result is also useful. |
+| **Unclear contribution** | A duty is listed without the candidate's own action. | *"Responsible for cleaning customer billing records in Excel."* | Reconstruct actions, checks and outputs from existing sources and propose complete wording first; isolate any remaining assumption for correction. |
+| **Unclear result** | Claiming improvement without a basis or observable change. | *"Optimized the process."* | Propose a concrete supported change or useful output; qualitative results count. Do not invent an outcome or require a metric before writing. |
 | **Unclear evidence class** | Blurring project, personal, and paid work. | *"Deployed a production model"* for a classroom exercise. | Name the setting and preserve its actual scope. |
 
 ---
@@ -34,11 +34,18 @@ Existing category tags can help locate evidence. They are not an exhaustive taxo
 
 ---
 
-## 4. Socratic Elicitation Dialogue Guidelines
+## 4. Proposal-first correction, not a questionnaire
 
-When an agent identifies a vague bullet:
-1. **Identify the missing fact** (purpose, contribution, method, validation, outcome, or setting).
-2. **Ask a crisp question without suggesting a number**:
-   - *"What records or checks did you use to reconcile the transactions?"*
-   - *"What was the process before the script, and how did you check the new result?"*
-3. **Record only verified user confirmations**. Never guess or extrapolate numbers.
+1. Identify what the current entry hides: analytical choice, problem, output, audience/use, validation or result. Search already-authorized material before requesting more history.
+2. Deliver an original-to-proposed reconstruction, with source basis and a concise explanation of its value. Make the proposal usable without asking the candidate to compose the answer.
+3. If helpful, provide a separately labelled complete enhancement option with its assumptions. The candidate may reject or correct it; it is not evidence until specifically confirmed. Do not add arbitrary numbers, tools or business outcomes.
+4. Ask at most one consequential clarification after the proposal by default. Prefer, for example, "The proposed version describes this as a management comparison report; is that output description accurate?" to asking the candidate to narrate their role, data, tools, checks and results in sequence. Never serialise a questionnaire across many turns.
+5. Continue supported improvements without blocking on optional unknowns. Record only established facts or specific user confirmations after authorized backup/write; keep reviewer suggestions and unresolved assumptions out of verified accomplishments.
+
+## 5. Contribution quality test
+
+- Does the proposed record explain useful work after removing tool names?
+- Are the problem, personal judgment and deliverable visible where supported?
+- Does it enable more than one relevant role-specific expression without changing history?
+- Is the improvement substantive, not just a stronger verb or a shorter sentence?
+- Can the candidate correct the concrete draft rather than build a story from scratch?

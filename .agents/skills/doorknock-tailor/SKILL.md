@@ -3,14 +3,14 @@ name: doorknock-tailor
 description: Tailor an ATS resume with an optional one-page requirement or a De-AI cover letter independently for a target job using DoorKnock's Typst-native engine.
 metadata:
   tags: [doorknock, resume, cover-letter, typst, tailor, job-application]
-  related_skills: [doorknock-resume-3stage, doorknock-refine, sepia]
+  related_skills: [doorknock-resume-roast-scorer, doorknock-refine, sepia]
 ---
 
 # DoorKnock Tailor Skill
 
 Use this skill when tailoring an ATS resume or a cover letter for a job in DoorKnock. Generate only the document type the user requested. Each type has its own version sequence. Resume v001 always permits multiple pages. Later resume versions are unrestricted by default; users can require one page for those revisions in DoorKnock Settings.
 
-For an ordinary resume request, create one initial version; a request to tailor or review a resume does not implicitly authorize the optional three-stage pipeline. When the saved one-page preference is enabled, target a readable one-page v001 from the first draft when the evidence fits, using multi-page v001 only when forcing one page would harm readability or relevant evidence. Do not create v002/v003 solely to exercise pipeline stages; publish another version only for material corrections or explicit user-requested iteration. The full three-stage workflow is opt-in under `doorknock-resume-3stage`.
+For an ordinary resume request, create one initial version. When the saved one-page preference is enabled, target a readable one-page v001 from the first draft when the evidence fits, using multi-page v001 only when forcing one page would harm readability or relevant evidence. Review the actual document and consolidate material corrections into a bounded revision. Do not create v002/v003 merely to exercise fixed pipeline stages; publish another version only for material corrections or explicit user-requested iteration. Use `doorknock-resume-roast-scorer` for requested independent hiring/ATS critique, then implement approved recommendations through this skill.
 
 ## Core Philosophy
 
@@ -45,6 +45,16 @@ For an ordinary resume request, create one initial version; a request to tailor 
    - Write the resume summary as a brief overview of relevant work and strengths, not an accomplishment bullet or a stack of target-role keywords. Supported JD terms are welcome when they clarify the work. Lead with what the candidate has done; mention a transition only when needed to clarify the fit, and do so once. Give the cover letter a concrete opening tied to the role. Do not repeat the same skills list in both places.
    - Check the letter header and signature for a generic profile headline that conflicts with the target role. A role-specific subject line is enough; do not imply the candidate already holds the target title.
    - When a key requirement has no convincing evidence, use `doorknock-refine` to look for existing detail or ask for facts. Do not fabricate a bridge.
+
+## Contribution-first writing and independent critique
+
+Do not assemble a resume by extracting bank sentences and fitting the page. For each selected example, identify the relevant problem, personal analytical action/judgment, method, useful output/audience, and supported result. Compose around the contribution; use only the elements needed for clarity, not a mandatory all-in-one formula or a fixed sentence length. Tool names and quantified personal savings should support the contribution rather than obscure it. Preserve estimate and scope qualifiers in natural English, without mechanically repeating cumbersome disclaimers.
+
+Before layout, test the main examples: if tool names are removed, can a reader still identify the useful work? Are SQL/BI claims demonstrated anywhere beyond Skills? Do projects supply different evidence? Is the first-scan attention allocated to the strongest hiring reason, even with chronological work history? Compress low-relevance duties before reducing body type or deleting useful analysis. Do not silently change chronological grouping; obtain approval for a different labelled structure.
+
+Use ordinary role-recognizable terms when the actions support them; the bank need not contain the identical phrase. Avoid ambiguous domain terms (for example, financial pricing terminology for contractor option comparisons). Never borrow a separately supported tool for an unrelated workflow or replace actual observations with a broader reliability/business claim. Where writing cannot establish a missing deliverable, invoke focused Refine discovery rather than adding more skills.
+
+When independent blind review is requested or part of the approved revision, supply only the final resume, target and optional JD/level to a fresh reviewer context, without evidence, author defenses or earlier scores. Keep its hiring critique separate from subsequent factual checks. Consolidate findings into wording/selection fixes versus questions requiring confirmation. Do not implement speculative reviewer rewrites. Resolve material feedback within the authorized revision budget and preserve prior versions. Acceptance requires persuasive contribution, role fit, and readable actual PDF as well as factual/compiler validity; never chase an arbitrary score.
 
 ## Agent Mode: Write Here, Compile Locally
 
