@@ -42,6 +42,7 @@ def render_typst_template(template_name: str, context: Dict[str, Any]) -> str:
 LAYOUT_PROFILES = [
     {"font_size": "10.5pt", "leading": "0.45em", "spacing": "0.55em", "margin_y": "0.45in", "margin_x": "0.5in"},
     {"font_size": "10.0pt", "leading": "0.42em", "spacing": "0.52em", "margin_y": "0.42in", "margin_x": "0.49in"},
+    {"font_size": "9.7pt", "leading": "0.40em", "spacing": "0.50em", "margin_y": "0.42in", "margin_x": "0.48in"},
     {"font_size": "9.3pt", "leading": "0.38em", "spacing": "0.48em", "margin_y": "0.38in", "margin_x": "0.48in"},
 ]
 

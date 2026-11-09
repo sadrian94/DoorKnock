@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="640" viewBox="0 0 1600 640" role="img" aria-labelledby="title desc">
+  <title id="title">DoorKnock — Your next move, backed by proof.</title>
+  <desc id="desc">An editorial cover in warm paper, charcoal and burnt orange. An open door rests on a measured threshold beside the DoorKnock wordmark.</desc>
+  <rect width="1600" height="640" fill="#f3efe5"/>
+  <path d="M64 84H1536M64 552H1536M1040 84V552" stroke="#c9c2b5"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#262a27">
+    <text x="64" y="56" font-size="17" letter-spacing="3">A JOB SEARCH, ON YOUR TERMS.</text>
+    <text x="1536" y="56" text-anchor="end" font-size="15" letter-spacing="2">LOCAL FIRST / HUMAN LED</text>
+    <text x="57" y="254" font-size="132" font-weight="700" letter-spacing="-8">DoorKnock</text>
+    <text x="64" y="355" font-family="Georgia, 'Times New Roman', serif" font-size="58">Your next move,</text>
+    <text x="64" y="425" font-family="Georgia, 'Times New Roman', serif" font-size="58">backed by proof.</text>
+    <text x="64" y="510" font-size="20" fill="#5b615a">Find the right door. Bring work you can stand behind.</text>
+    <text x="64" y="600" font-size="15" letter-spacing="2">REFINE · SCOUT · TAILOR · KNOCK · CADENCE</text>
+    <text x="1536" y="600" text-anchor="end" font-size="15" letter-spacing="2">PROOF BEFORE POLISH.</text>
+  </g>
+  <g fill="none" stroke="#262a27">
+    <path d="M1112 484H1480M1148 484V172H1396V484" stroke-width="3"/>
+    <path d="M1163 484V187H1381" stroke="#9b9d91"/>
+    <path d="M1148 172L1318 134V516L1148 484Z" fill="#bf542e" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M1166 194L1299 164V485L1166 461Z" stroke="#e7af8c"/>
+    <circle cx="1270" cy="331" r="6" fill="#f3efe5" stroke="none"/>
+    <path d="M1396 484L1468 516H1318" stroke="#9b9d91"/>
+    <path d="M1100 136H1116M1108 128V144" stroke="#bf542e" stroke-width="2"/>
+  </g>
+  <text x="1448" y="414" transform="rotate(-90 1448 414)" font-family="Arial, Helvetica, sans-serif" font-size="12" letter-spacing="3" fill="#73786e">THE NEXT STEP IS YOURS.</text>
+</svg>

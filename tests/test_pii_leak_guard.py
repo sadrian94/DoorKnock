@@ -1,4 +1,5 @@
 import re
+import subprocess
 from pathlib import Path
 import yaml
 
@@ -61,20 +62,20 @@ def get_candidate_pii_tokens() -> list[str]:
                 for bullet in experience.get("bullets", []):
                     add_token(bullet.get("text"), minimum_length=32)
                     for metric in bullet.get("metrics", []):
-                        add_token(metric, minimum_length=8)
+                        add_token(metric.get("text") if isinstance(metric, dict) else metric, minimum_length=8)
             for project in evidence.get("projects", []):
                 for key in ("name", "github_url"):
                     add_token(project.get(key), minimum_length=8)
                 for bullet in project.get("bullets", []):
                     add_token(bullet.get("text"), minimum_length=32)
                     for metric in bullet.get("metrics", []):
-                        add_token(metric, minimum_length=8)
+                        add_token(metric.get("text") if isinstance(metric, dict) else metric, minimum_length=8)
             for education in evidence.get("education", []):
                 for key in ("institution", "degree", "year", "location"):
                     add_token(education.get(key), minimum_length=8)
             for cert_type in ("primary", "secondary"):
                 for certification in evidence.get("certifications", {}).get(cert_type, []):
-                    add_token(certification, minimum_length=8)
+                    add_token(certification.get("name") if isinstance(certification, dict) else certification, minimum_length=8)
         except Exception:
             pass
     return list(set(tokens))
@@ -86,7 +87,14 @@ def test_zero_candidate_pii_leak_in_tracked_code():
         return
 
     leaks = []
-    for p in REPO_ROOT.rglob("*"):
+    paths = subprocess.check_output(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        cwd=REPO_ROOT,
+    ).decode("utf-8").split("\0")
+    for relative_path in paths:
+        if not relative_path:
+            continue
+        p = REPO_ROOT / relative_path
         if p.is_dir():
             continue
         # Check exclusion directories

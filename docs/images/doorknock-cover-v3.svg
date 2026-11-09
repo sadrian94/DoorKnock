@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="640" viewBox="0 0 1600 640" role="img" aria-labelledby="title desc">
+  <title id="title">DoorKnock — Your next move, backed by proof.</title>
+  <desc id="desc">The original editorial cover in warm paper and charcoal, with the app's ivory open-door icon on a flat amber rounded square at the right.</desc>
+  <rect width="1600" height="640" fill="#f3efe5"/>
+  <path d="M64 84H1536M64 552H1536M1040 84V552" stroke="#c9c2b5"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#262a27">
+    <text x="64" y="56" font-size="17" letter-spacing="3">A JOB SEARCH, ON YOUR TERMS.</text>
+    <text x="1536" y="56" text-anchor="end" font-size="15" letter-spacing="2">LOCAL FIRST / HUMAN LED</text>
+    <text x="57" y="254" font-size="132" font-weight="700" letter-spacing="-8">DoorKnock</text>
+    <text x="64" y="355" font-family="Georgia, 'Times New Roman', serif" font-size="58">Your next move,</text>
+    <text x="64" y="425" font-family="Georgia, 'Times New Roman', serif" font-size="58">backed by proof.</text>
+    <text x="64" y="510" font-size="20" fill="#5b615a">Find the right door. Bring work you can stand behind.</text>
+    <text x="64" y="600" font-size="15" letter-spacing="2">REFINE · SCOUT · TAILOR · KNOCK · CADENCE</text>
+    <text x="1536" y="600" text-anchor="end" font-size="15" letter-spacing="2">PROOF BEFORE POLISH.</text>
+  </g>
+  <rect x="1150" y="182" width="276" height="276" rx="68" fill="#d97706"/>
+  <!-- The same Lucide DoorOpen paths used by the app's Navbar. -->
+  <g transform="translate(1212.4 244.4) scale(6.3)" fill="none" stroke="#fffbeb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 21H2"/>
+    <path d="M10 3H7a2 2 0 00-2 2v16"/>
+    <path d="M14 12h.01"/>
+    <path d="M19 21V5a2 2 0 00-1.675-1.974l-6.163-1.013A1 1 0 0010 3v18a1 1 0 001.124.992z"/>
+    <path d="M22 21h-3"/>
+  </g>
+  <text x="1448" y="414" transform="rotate(-90 1448 414)" font-family="Arial, Helvetica, sans-serif" font-size="12" letter-spacing="3" fill="#73786e">THE NEXT STEP IS YOURS.</text>
+</svg>

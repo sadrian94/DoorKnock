@@ -109,7 +109,7 @@ workspace/profile.yaml                         Identity, contact details, links
 workspace/master_resume/master_evidence.yaml    Experience, projects, skills, claims
 ```
 
-Start with the [workspace setup examples](docs/code-data-separation.md#3-how-to-set-up-a-new-candidate-workspace). Workspace setup is manual; there is no first-run wizard.
+Start with the [workspace setup examples](docs/code-data-separation.md#3-how-to-set-up-a-new-candidate-workspace) and the [master evidence schema](docs/evidence-schema.md). The v2 schema defines sources, claim status, stable evidence IDs, conservative migration, and numeric claim references for publication. Existing v1 evidence banks remain readable. Workspace setup is manual; there is no first-run wizard.
 
 The `doorknock-*` skills are discovered by compatible agents from `.agents/skills/`. [Sepia](https://github.com/Nanako0129/sepia) is an optional third-party writing skill, installed separately; see the [installation notes](docs/prerequisites.md#2-optional-sepia-agent-skill).
 
@@ -145,5 +145,6 @@ Resume v001 permits multiple pages. Later resume versions follow the saved one-p
 - [Follow-up policy](docs/cadence.md): timing, confirmed events, and when to pause
 - [Prerequisites and optional services](docs/prerequisites.md)
 - [System and candidate-data separation](docs/code-data-separation.md)
+- [Master evidence schema](docs/evidence-schema.md)
 
 MIT licensed. See [LICENSE](LICENSE).

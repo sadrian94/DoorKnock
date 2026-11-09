@@ -3,11 +3,14 @@ name: doorknock-tailor
 description: Tailor an ATS resume with an optional one-page requirement or a De-AI cover letter independently for a target job using DoorKnock's Typst-native engine.
 metadata:
   tags: [doorknock, resume, cover-letter, typst, tailor, job-application]
+  related_skills: [doorknock-resume-3stage, doorknock-refine, sepia]
 ---
 
 # DoorKnock Tailor Skill
 
 Use this skill when tailoring an ATS resume or a cover letter for a job in DoorKnock. Generate only the document type the user requested. Each type has its own version sequence. Resume v001 always permits multiple pages. Later resume versions are unrestricted by default; users can require one page for those revisions in DoorKnock Settings.
+
+For an ordinary resume request, create one initial version; a request to tailor or review a resume does not implicitly authorize the optional three-stage pipeline. When the saved one-page preference is enabled, target a readable one-page v001 from the first draft when the evidence fits, using multi-page v001 only when forcing one page would harm readability or relevant evidence. Do not create v002/v003 solely to exercise pipeline stages; publish another version only for material corrections or explicit user-requested iteration. The full three-stage workflow is opt-in under `doorknock-resume-3stage`.
 
 ## Core Philosophy
 
@@ -35,7 +38,8 @@ Use this skill when tailoring an ATS resume or a cover letter for a job in DoorK
    - Candidate-facing clean naming: `[Name]_Resume_[Company].pdf` and `[Name]_Cover_Letter_[Company].pdf`.
 5. **JD-Driven Selection**:
    - Select relevant evidence, projects, and skills for the target job without fixed bullet counts or categories.
-   - Count work experience entries in the master evidence, excluding projects. With one to three entries, retain every job by default and vary its detail by relevance; summarize less relevant work briefly rather than omitting the entry. Only with more than three entries should you consider omitting entire jobs, weighing relevance, recency, and career continuity. This is an omission threshold, not a three-job maximum. Preserve exact employers, titles, dates, and locations. Shorten bullets and other sections before dropping a job merely to fit one page. Keep complete work history in the master evidence; this selection applies only to the tailored resume.
+   - Count work experience entries in the master evidence, excluding projects. With one to three entries, retain every job by default unless the candidate has explicitly authorized selective omission of less relevant experience. With more than three entries, consider selective omission based on relevance, recency and career continuity; do not treat three as a maximum. Where omission is authorized, assess both direct and transferable value, chronology and potential employment gaps before deciding, and honor any explicit role-specific inclusion choice. Do not omit useful work solely to fit one page or misrepresent the remaining timeline. Preserve exact employers, titles, dates and locations; keep complete work history in the master evidence. Selection changes only the tailored resume.
+   - Default to reverse chronological order by end date within Experience, with ongoing roles first. Do not mix relevance-ranked and chronological entries in an unlabelled section. Emphasize relevant roles through the Summary and bullet selection and depth; use an alternative clearly labelled grouping only with user approval.
    - Use terms from the posting only when they accurately describe the candidate's evidence.
    - Review the finished resume for substance, not just page count: give a relevant project enough room to show method, validation, and result when the evidence supports them. Do not shrink useful content merely to leave white space or meet a visual utilization target.
    - Write the resume summary as a brief overview of relevant work and strengths, not an accomplishment bullet or a stack of target-role keywords. Supported JD terms are welcome when they clarify the work. Lead with what the candidate has done; mention a transition only when needed to clarify the fit, and do so once. Give the cover letter a concrete opening tied to the role. Do not repeat the same skills list in both places.
@@ -46,11 +50,13 @@ Use this skill when tailoring an ATS resume or a cover letter for a job in DoorK
 
 When invoked in an agent conversation, the current agent writes and reviews the requested document. Do not run the provider generation path or call `POST /api/jobs/{job_id}/tailor/{doc_type}` for agent-mode drafting.
 
-1. Read the target posting and the gitignored `workspace/master_resume/master_evidence.yaml` and `workspace/profile.yaml`. Keep candidate facts inside `workspace/`; never put them in tracked source, prompts, or tests.
+For document-only authoring, run the authored-package validator/compiler and inspect the actual PDF; do not run the full `uv run pytest tests` suite unless repository code or tests changed. The project full-suite gate applies to code changes/commits, not private application documents. Batch material review findings into one bounded revision and re-read only the relevant source/evidence records; do not repeat broad discovery on every pass.
+
+1. Read the target posting and the gitignored `workspace/master_resume/master_evidence.yaml` and `workspace/profile.yaml`. Use targeted searches and reads for role-relevant evidence, its parent confirmation limits, and supporting source records; avoid serializing or re-reading the full evidence bank on every revision. Keep candidate facts inside `workspace/`; never put them in tracked source, prompts, or tests.
 2. Build `keyword_alignment` before drafting, using the contract below. Map the main job requirements to specific verified evidence, retaining important unsupported requirements as gaps. Treat company recon as uncertain context.
    Use that map as the writing brief: read each linked source statement, identify its actual action, object, method and supported result, then rewrite that same work using equivalent JD verbs and nouns in the planned document sections. Change sentence structure and emphasis where useful; preserve domain, tools, employer/project, responsibility, seniority, provenance and metric scope. If a JD term would change the meaning, keep accurate wording and leave that term as a gap. Rewrite only the tailored document; preserve the evidence bank's original statements. The Summary synthesizes the selected experience rather than repeating the rewritten bullets.
 3. For a resume, draft positioning, then Experience and Projects, then Skills, Education and Certifications. Preserve exact identity, dates, degrees, certifications, employers, tools, and metrics from evidence. Review each section against its sources.
-   Apply the work experience selection rule above before drafting and check it again during review: one to three jobs are all retained by default; more than three permits selective omission without imposing a three-job maximum.
+   Apply the work experience selection rule above before drafting and check it again during review, including any candidate-authorized exception for less relevant work; never assume an omitted role has been removed from the master evidence.
    In the Skills section, use concise skill names without parenthetical provenance labels such as `(coursework)`. Keep coursework provenance in the master evidence and never imply paid use or production experience from it.
 4. Write the resume Summary last from its selected content. Make it a brief, natural overview for a human reader. Check every claim against evidence; remove keyword lists, unsupported target-title claims, and repeated bullet metrics.
    Read the Summary and each bullet aloud. Replace vague nouns with concrete descriptions of verified work. Preserve the original domain and the candidate's actual level of ownership.

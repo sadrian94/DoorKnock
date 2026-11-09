@@ -9,12 +9,15 @@ import re
 from typing import Any
 
 import yaml
+from ..evidence_schema import eligible_evidence
 
 
 def evidence_index(evidence_context: str) -> dict[str, Any]:
     evidence = yaml.safe_load(evidence_context)
     if not isinstance(evidence, dict):
         raise ValueError("Structured evidence is required for keyword alignment")
+    evidence = eligible_evidence(evidence)
+    v2 = evidence.get("schema_version") == 2
     index = {}
 
     def add(key, value):
@@ -34,7 +37,17 @@ def evidence_index(evidence_context: str) -> dict[str, Any]:
                                       "evidence_status": entry.get("evidence_status"), "bullet": bullet})
     for category, skills in (evidence.get("technical_skills") or {}).items():
         for position, skill in enumerate(skills):
-            add(f"technical_skills/{category}/{position}", skill)
+            add(skill["id"] if v2 else f"technical_skills/{category}/{position}", skill)
+    if v2:
+        for entry in evidence.get("education", []):
+            add(entry["id"], entry)
+        for entries in evidence.get("certifications", {}).values():
+            for entry in entries:
+                add(entry["id"], entry)
+        for group in evidence.get("presentation_groups", []):
+            for bullet in group["bullets"]:
+                add(bullet["id"], {"section": "presentation_groups", "parent_id": group["id"],
+                                    "evidence_refs": bullet["evidence_refs"], "bullet": bullet})
     return index
 
 
@@ -51,7 +64,7 @@ def _contains(text: str, phrase: str) -> bool:
 def validate_alignment(rows, posting: str, index: dict, document_type: str) -> None:
     if not isinstance(rows, list) or (posting.strip() and not rows):
         raise ValueError("Keyword alignment requires a nonempty list for a posting")
-    sections = {"summary", "experiences", "projects", "skills"} if document_type == "resume" else {"paragraphs"}
+    sections = {"summary", "experiences", "projects", "skills", "education", "certifications"} if document_type == "resume" else {"paragraphs"}
     seen = set()
     for row in rows:
         if not isinstance(row, dict):
@@ -114,6 +127,10 @@ def document_sections(payload: dict, document_type: str) -> dict[str, str]:
                                   for p in payload.get("projects", [])),
         "skills": "\n".join(s.get("category", "") + "\n" + s.get("items", s.get("skills", ""))
                                 for s in payload.get("skills", [])),
+        "education": "\n".join(" ".join(str(e.get(k, "")) for k in
+                                         ("institution", "degree", "year", "location", "focus"))
+                                for e in payload.get("education", [])),
+        "certifications": str(payload.get("certifications", "")),
     }
 
 

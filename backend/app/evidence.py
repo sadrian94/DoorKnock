@@ -3,16 +3,16 @@ from .clock import utc_now
 from typing import Dict, Any, Optional
 import yaml
 from .config import DOORKNOCK_MASTER_EVIDENCE_YAML_PATH
+from .evidence_schema import validate_evidence_bank
 
 def load_master_evidence() -> Optional[Dict[str, Any]]:
     """Load structured candidate evidence bank from YAML."""
     if DOORKNOCK_MASTER_EVIDENCE_YAML_PATH.exists():
         try:
             data = yaml.safe_load(DOORKNOCK_MASTER_EVIDENCE_YAML_PATH.read_text(encoding="utf-8"))
-            if isinstance(data, dict):
-                return data
-        except Exception:
-            pass
+        except (OSError, yaml.YAMLError) as exc:
+            raise ValueError("Cannot read master_evidence.yaml as valid YAML") from exc
+        return validate_evidence_bank(data)
     return None
 
 def format_evidence_for_prompt(evidence: Dict[str, Any]) -> str:

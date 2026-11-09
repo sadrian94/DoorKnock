@@ -16,7 +16,7 @@ from ..config import (
 from ..ai.provider import AIClient, get_ai_client
 from .compiler import compile_document
 from .settings import get_resume_settings
-from .validation import validate_resume_evidence
+from .validation import validate_resume_evidence, validate_letter_evidence
 from .alignment import (
     ALIGNMENT_INSTRUCTION, REVIEW_INSTRUCTION, evidence_index,
     validate_alignment, validate_claim_review, keyword_report,
@@ -295,6 +295,19 @@ async def tailor_application_documents(
         )
         index = evidence_index(candidate_evidence)
         context += "\nEvidence index (IDs with provenance):\n" + json.dumps(index, ensure_ascii=False)
+        context += (
+            "\nFor evidence schema v2, recorded means preserved evidence, not newly verified. Never use "
+            "pending_confirmation/excluded claims or metrics as support. Presentation groups reference separate "
+            "engagements; preserve each employer's identity and exact employment facts, never invent a combined employer. "
+            "For any output containing numeric claims, also return claim_evidence: an object mapping output paths "
+            "to specific eligible bullet, skill or credential IDs from the index. Paths are summary, "
+            "experiences/<zero-based entry>/bullets/<zero-based bullet>, projects/<entry>/bullets/<bullet>, "
+            "skills/<entry>/items, education/<entry>/focus, certifications, or paragraphs/<zero-based paragraph>. Numeric work/project bullets "
+            "must cite that same engagement/project's own bullet IDs. Parent IDs support identity dates/name only, "
+            "never all child metrics. Do not borrow numbers "
+            "from source notes, confirmation dates, IDs, guidance, or another employer. Preserve each metric's "
+            "scope, estimate/modeling basis and limitations. References do not replace semantic claim review."
+        )
 
         page_guidance = (
             "Keep the resume to one page."
@@ -304,13 +317,14 @@ async def tailor_application_documents(
         resume_sections_instruction = (
             "Write only the resume Experience and Projects sections. "
             + page_guidance
-            + " Count work experience entries in the master evidence, excluding projects. When there are one to three work experience entries, retain every entry by default; tailor the detail to relevance and summarize less relevant work briefly rather than dropping it. Only when there are more than three entries should you consider omitting entire jobs based on relevance, recency and career continuity. More than three is a threshold for considering omission, not a maximum of three jobs; retain more when useful. Preserve exact employers, titles, dates and locations. Shorten bullets and other sections before dropping a job merely to fit one page."
+            + " Default to reverse chronological order by end date in Experience, with ongoing roles first. Do not mix relevance-ranked and chronological entries in one unlabelled section. Emphasize the most relevant work through bullet selection and depth rather than moving an older job to the top. Use an alternative clearly labelled grouping only when the user has approved it."
+            + " Count work experience entries in the master evidence, excluding projects. When there are one to three entries, retain every entry by default unless the candidate has explicitly authorized selective omission of less relevant experience. With more than three, consider selective omission based on relevance, recency and career continuity; three is not a maximum. When omission is authorized, assess transferable value and potential employment gaps and honor explicit role-specific inclusion choices. Do not omit useful work solely to fit one page or misrepresent the remaining timeline. Preserve exact employers, titles, dates and locations."
             + ' Select the strongest relevant evidence and preserve exact employers, titles and dates. Each bullet should name a concrete action and its object, then the useful method, scale, check, or verified result. Use direct verbs for work the candidate performed; use a supporting verb only when the evidence shows a supporting role. Keep the original work domain visible. Do not add inferred outcomes such as prevented losses or improved decisions unless the evidence supports them. Give useful projects enough detail to show method, checks and result. Avoid invented metrics, vague corporate phrases, keyword stuffing and fixed bullet counts. Return {"experiences": [{"company": "", "location": "", "title": "", "dates": "", "bullets": [""]}], "projects": [{"name": "", "tech_stack": "", "bullets": [""]}]}. Use empty arrays when unsupported; never include blank example entries.'
         )
 
         if document_type == "resume":
             strategy = await _generate_part(client, context,
-        'Select the strongest evidence-based fit for this role. ' + ALIGNMENT_INSTRUCTION + ' Allowed placements: summary, experiences, projects, skills. Return {"target_role_header": "<concise role heading, not an employment claim>", "primary_angle": "<one-sentence evidence-based fit>", "keyword_alignment": [<entries>]}.', ("target_role_header", "primary_angle", "keyword_alignment"))
+        'Select the strongest evidence-based fit for this role. ' + ALIGNMENT_INSTRUCTION + ' Allowed placements: summary, experiences, projects, skills, education, certifications. Return {"target_role_header": "<concise role heading, not an employment claim>", "primary_angle": "<one-sentence evidence-based fit>", "keyword_alignment": [<entries>]}.', ("target_role_header", "primary_angle", "keyword_alignment"))
             alignment = strategy.pop("keyword_alignment")
             validate_alignment(alignment, raw_text, index, document_type)
             context += "\nKeyword alignment plan:\n" + json.dumps(alignment, ensure_ascii=False)
@@ -321,9 +335,13 @@ async def tailor_application_documents(
             credentials = await _generate_part(client, context + "\nSelected resume content:\n" + json.dumps(body, ensure_ascii=False),
         'Write only resume Skills, Education and Certifications. Include supported, role-relevant skill names without parenthetical provenance labels such as (coursework); retain the evidence boundary and do not imply paid use of a skill supported only by study. Preserve exact degree and certification facts. Avoid repeating a tool in several categories. Return {"skills": [{"category": "", "items": "<comma-separated supported skills>"}], "education": [{"institution": "", "degree": "", "year": "", "location": "", "focus": ""}], "certifications": ""}. Use empty values when unsupported.', ("skills", "education", "certifications"))
             resume_payload = {**body, **credentials}
+            if "claim_evidence" in body or "claim_evidence" in credentials:
+                resume_payload["claim_evidence"] = {**body.get("claim_evidence", {}), **credentials.get("claim_evidence", {})}
             summary = await _generate_part(client, context + "\nSelected resume:\n" + json.dumps(resume_payload, ensure_ascii=False),
         'Write only the resume Summary for a human reader: a brief, natural overview of relevant work the candidate has done and one or two strengths that match the role. Lead with concrete work rather than a target-title label, aspiration, or list of abstract capabilities. Mention a career transition only if it clarifies the fit, and only once. Base every phrase on candidate evidence and the selected resume; do not imply the candidate already holds the target title. Use a supported JD term when it clarifies the work; do not stack keywords, repeat bullet metrics or claim inferred business effects. Return {"summary": "<brief specific summary>"}.', ("summary",))
             resume_payload["summary"] = summary.get("summary", "")
+            if "claim_evidence" in summary:
+                resume_payload["claim_evidence"] = {**resume_payload.get("claim_evidence", {}), **summary["claim_evidence"]}
         else:
             plan = await _generate_part(client, context,
                 ALIGNMENT_INSTRUCTION + ' Allowed placements: paragraphs. Return {"keyword_alignment": [<entries>]}.',
@@ -398,14 +416,20 @@ async def tailor_application_documents(
     }
 
     # Review and fingerprint the same finalized document content passed to Typst.
+    # Evidence bindings stay on the original payload for deterministic validation.
     payload = resume_context["resume"] if document_type == "resume" else letter_context["letter"]
     if authored_documents is None:
         reviewed = await _generate_part(client,
             context + "\nCompleted document:\n" + json.dumps(payload, ensure_ascii=False),
             REVIEW_INSTRUCTION, ("claim_review",))
         claim_review = reviewed["claim_review"]
+    if yaml.safe_load(candidate_evidence).get("schema_version") == 2 and (
+            alignment is None or claim_review is None):
+        raise ValueError("Evidence schema v2 requires keyword_alignment and claim_review before publication")
     if alignment is not None or claim_review is not None:
         validate_claim_review(claim_review, payload, document_type)
+    if document_type == "cover_letter":
+        validate_letter_evidence(letter_payload, candidate_evidence)
     review_report = keyword_report(alignment, claim_review, payload, document_type, raw_text, candidate_evidence,
                                    "agent" if authored_documents is not None else "provider")
     if review_report["status"] == "needs_revision":

@@ -18,6 +18,7 @@ __pycache__/
 .venv/
 .pytest_cache/
 .pytest-tmp/
+/.pytest-tmp-run/
 /.uv-cache*/
 *.egg-info/
 dist/
@@ -33,3 +34,7 @@ frontend/dist/
 frontend/node_modules/
 .DS_Store
 Thumbs.db
+
+# Local editor settings and scratch artifacts
+/.obsidian/
+/scratch/

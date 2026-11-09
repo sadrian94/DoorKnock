@@ -197,6 +197,11 @@ async def test_provider_plan_reaches_drafting_and_review(tmp_path, candidate, do
             assert "Rewrite the selected source statements using supported JD terminology" in prompt
             assert '"evidence": {"payment-checks":' in prompt
             if "Write only the resume Experience" in prompt:
+                assert "reverse chronological order by end date" in prompt
+                assert "with ongoing roles first" in prompt
+                assert "bullet selection and depth" in prompt
+                assert "explicitly authorized selective omission" in prompt
+                assert "transferable value and potential employment gaps" in prompt
                 return {"experiences": [], "projects": []}
             if "Write only resume Skills" in prompt:
                 return {"skills": [{"category": "Data", "items": "SQL (coursework)"}], "education": [], "certifications": ""}
@@ -301,3 +306,41 @@ def test_malformed_or_unbound_reviews_cannot_pass(review):
     from app.tailor.alignment import validate_claim_review
     with pytest.raises(ValueError):
         validate_claim_review(review, {"summary": "Investigated discrepancies."}, "resume")
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("document_type", ["resume", "cover_letter"])
+async def test_v2_publication_requires_review_and_blocks_pending_metrics(tmp_path, candidate, monkeypatch, document_type):
+    import yaml
+    from app.evidence_schema import migrate_evidence_v1
+
+    base = engine.load_candidate_base_context()
+    evidence = migrate_evidence_v1(yaml.safe_load(EVIDENCE), recorded_at="2026-01-12")
+    evidence["experiences"][0]["bullets"].append({
+        "id": "pending-volume", "text": "Reviewed 23 bids.", "status": "pending_confirmation",
+        "source_refs": evidence["experiences"][0]["source_refs"], "metrics": []})
+    base["candidate_evidence_context"] = yaml.safe_dump(evidence)
+    monkeypatch.setattr(engine, "load_candidate_base_context", lambda: base)
+    data = package()
+    if document_type == "cover_letter":
+        data["cover_letter"] = {"paragraphs": ["Investigated transaction discrepancies."]}
+        for row in data["keyword_alignment"]:
+            if row["support"] != "unsupported":
+                row["placements"] = ["paragraphs"]
+    legacy = {k: v for k, v in data.items() if k not in ("keyword_alignment", "claim_review")}
+    with pytest.raises(ValueError, match="requires keyword_alignment and claim_review"):
+        await publish(tmp_path, legacy, document_type=document_type)
+    assert not (tmp_path / document_type / "v001").exists()
+    # A ready provider/agent review cannot override the deterministic pending-number guard.
+    if document_type == "resume":
+        data["resume"]["summary"] = "Reviewed 23 bids."
+    else:
+        data["cover_letter"]["paragraphs"] = ["Reviewed 23 bids."]
+    with pytest.raises(ValueError, match="numbers absent"):
+        await publish(tmp_path, data, document_type=document_type)
+    assert not (tmp_path / document_type / "v001").exists()
+    if document_type == "resume":
+        data["resume"]["summary"] = "Investigated transaction discrepancies."
+    else:
+        data["cover_letter"]["paragraphs"] = ["Investigated transaction discrepancies."]
+    assert (await publish(tmp_path, data, document_type=document_type))["success"]
