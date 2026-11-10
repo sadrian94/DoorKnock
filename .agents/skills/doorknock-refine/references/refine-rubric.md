@@ -44,6 +44,11 @@ Existing category tags can help locate evidence. They are not an exhaustive taxo
 
 ## 5. Contribution quality test
 
+- Treat absent bank detail as unrecorded, not a negative finding about the candidate. Do not use a source's weak vocabulary as a writing ceiling.
+- Decompose each rewrite into clauses: retain useful professional framing; identify only the exact unrecorded method/scope or new factual claim for a precise correction. Do not reject a whole recommendation because one clause is unestablished.
+- Test whether actions already support terms such as trade-off analysis, quality assurance or process improvement; do not demand that source notes use the same terms. Keep purpose distinct from achieved outcome and individual scope distinct from organizational adoption.
+- Provide a strong full proposal before a focused interpretation check. A specific candidate confirmation resolves that item for the authorized document; do not ask again or silently write the bank.
+
 - Does the proposed record explain useful work after removing tool names?
 - Are the problem, personal judgment and deliverable visible where supported?
 - Does it enable more than one relevant role-specific expression without changing history?

@@ -73,6 +73,14 @@ Keep the core truth intact in supported rewrites. Do not invent tools, numbers, 
 
 The coordinator subsequently checks adopted wording under Tailor's publication contract. Do not silently write reviewer assumptions into the evidence bank; do not use private background to dismiss a genuine missing on-page signal.
 
+### Evaluate stronger framing clause by clause
+
+**Unrecorded does not mean unperformed.** A resume-only reviewer can say "not demonstrated here", not that the candidate never did the work. Stay within the blind-input boundary; the coordinator, not this reviewer, handles evidence discovery and candidate confirmations.
+
+When comparing external recommendations, **decompose each rewrite into clauses**. Separate useful professional naming or synthesis, plausible unrecorded work, and added factual claims such as numbers, tool use, authority, deployment or realized outcomes. Keep the useful direction even if one clause needs validation; do not dismiss an entire rewrite or default to weaker prose merely because the document does not establish every detail. Supply complete competitive copy, with new assumptions grouped separately for the coordinator/user, not a questionnaire.
+
+Competitive strengthening is expected: make analytical choices, initiative, responsibility, outputs and decision use visible. Judge terms by their substance rather than whether source wording uses the same label; ordinary quality review can warrant quality-assurance framing without establishing rubric ownership. Distinguish purpose from achieved outcome, option/cost comparison from a formal financial model, and individual process improvement from employer-wide adoption. An undocumented stronger framing is a discovery opportunity, not proof of exaggeration; a conditional proposal is not yet a publication-ready fact. Retain a candid finding about the document while leaving the candidate's unrecorded capability open.
+
 ### Step 6: Return a decision and handoff
 
 Conclude with accept / revise / substantial repositioning for the stated target, the top changes, and what wording alone cannot fix. Reviewers do not publish resumes or change a general-resume latest pointer. Report visual or evidence limitations without diluting concrete recommendations.
