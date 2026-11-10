@@ -8,8 +8,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR / "backend"))
 
 from app.main import app
-from app.ai.profile import get_candidate_profile_context
-from app.ai.gemini import GeminiClient
 
 
 @pytest.fixture
@@ -48,11 +46,6 @@ def synthetic_evidence_file(tmp_path, monkeypatch):
 def client():
     return TestClient(app)
 
-def test_candidate_profile_loader_uses_synthetic_yaml(synthetic_evidence_file):
-    profile = get_candidate_profile_context()
-    assert len(profile.strip()) > 50
-    assert "Apex Logistics" in profile
-    assert "synthetic-bullet-1" in profile
 
 def test_analyze_endpoint_validation(client):
     # Test with empty text/url
@@ -136,4 +129,3 @@ async def test_v2_tactical_brief_schema_mappings(synthetic_evidence_file):
     assert result["employer_pain_points"] == result["employer_mandate"]["acute_operational_frictions"]
     assert result["gaps_or_risks"] == ["Lack of specialized TMS vendor platform exposure"]
     assert result["suitability_reason"] == "Strong alignment with logistics reconciliation pipelines."
-

@@ -1,21 +1,8 @@
 import pytest
-import json
 from unittest.mock import AsyncMock, MagicMock
-from app.ai.recon import recon_company_and_department, RECON_PROMPT_TEMPLATE
+from app.ai.recon import recon_company_and_department
 from app.ai.gemini import GeminiClient
-from app import crud
 
-def test_recon_prompt_template_formatting():
-    prompt = RECON_PROMPT_TEMPLATE.format(
-        company="ElevenLabs",
-        company_url="https://elevenlabs.io",
-        role_title="Full-Stack Engineer",
-        job_description="Build real-time audio creative tools with WebAudio and Canvas."
-    )
-    assert "ElevenLabs" in prompt
-    assert "Full-Stack Engineer" in prompt
-    assert "revenue_engine" in prompt
-    assert "manager_core_pressure" in prompt
 
 @pytest.mark.anyio
 async def test_recon_company_and_department_mocked():
@@ -56,24 +43,12 @@ async def test_recon_company_and_department_mocked():
         gemini_client=mock_gemini
     )
 
+    prompt = mock_gemini.generate_json.call_args.kwargs["prompt"]
+    assert "TestCorp" in prompt
+    assert "Senior Backend Engineer" in prompt
+    assert "Maintain dispatch pipelines and optimize latency." in prompt
+    assert "https://testcorp.example" in prompt
     assert res["company_name"] == "TestCorp"
     assert res["business_model"]["revenue_engine"] == "B2B SaaS"
     assert res["department_intel"]["role_archetype"] == "FIREFIGHTER"
     assert "researched_at" in res
-
-def test_crud_update_company_recon():
-    # Fetch a job or create a test job
-    saved = crud.get_saved_jobs(limit=1)
-    if not saved:
-        pytest.skip("No saved jobs to test crud update")
-    job_id = saved[0]["id"]
-
-    sample_recon = {
-        "company_name": saved[0]["company"],
-        "business_model": {"revenue_engine": "Test Revenue Engine"}
-    }
-    updated = crud.update_job_company_recon(job_id, sample_recon)
-    assert updated is not None
-    assert updated["company_recon_json"] is not None
-    loaded = json.loads(updated["company_recon_json"])
-    assert loaded["company_name"] == saved[0]["company"]

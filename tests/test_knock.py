@@ -1,31 +1,9 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from app.ai.knock import generate_outreach_for_contact, KNOCK_PROMPT_TEMPLATE
+from app.ai.knock import generate_outreach_for_contact
 from app.ai.gemini import GeminiClient
 from app import crud
 
-FORBIDDEN_WORDS = [
-    "delve", "foster", "elevate", "harness", "empower", "resonate",
-    "testament to", "tapestry", "multifaceted", "seamless", "vibrant",
-    "I hope this message finds you well"
-]
-
-def test_knock_prompt_template_formatting():
-    prompt = KNOCK_PROMPT_TEMPLATE.format(
-        candidate_profile="Candidate Profile Sample",
-        company="Apex Audio Systems",
-        role_title="Full-Stack Engineer",
-        company_recon_summary="Revenue Engine: B2B SaaS",
-        frictions_summary="Frictions: WebAudio memory leaks",
-        contact_name="Alex Taylor",
-        contact_title="Head of Engineering",
-        contact_type="hiring_manager",
-        default_archetype="pain_point_solution",
-    )
-    assert "Alex Taylor" in prompt
-    assert "Apex Audio Systems" in prompt
-    assert "linkedin_connect" in prompt
-    assert "<= 300 characters" in prompt
 
 @pytest.mark.anyio
 async def test_generate_outreach_for_contact_mocked(monkeypatch):
@@ -40,7 +18,7 @@ async def test_generate_outreach_for_contact_mocked(monkeypatch):
             VALUES (?, ?, ?, ?, ?)
         """, ("test-job-knock-01", "Audio Systems Analyst", "Apex Audio Systems", "Build sample audio web editors.", "saved"))
         conn.commit()
-    import_res = crud.create_application_for_job("test-job-knock-01")
+    crud.create_application_for_job("test-job-knock-01")
 
     # 2. Add contact
     contact = crud.add_contact(
@@ -91,17 +69,22 @@ async def test_generate_outreach_for_contact_mocked(monkeypatch):
         gemini_client=mock_gemini
     )
 
-    assert len(msgs) == 2
-    connect_msg = next(m for m in msgs if m["channel"] == "linkedin_connect")
-    assert len(connect_msg["body"]) <= 300
-
-    inmail_msg = next(m for m in msgs if m["channel"] == "linkedin_inmail")
-    assert 50 <= len(inmail_msg["body"].split()) <= 150
-
-    # Ensure no forbidden AI tell words
-    for m in msgs:
-        for forbidden in FORBIDDEN_WORDS:
-            assert forbidden.lower() not in m["body"].lower()
+    # Canned provider prose cannot demonstrate model style or length compliance.
+    # Check provider inputs and the drafts actually persisted instead.
+    prompt = mock_gemini.generate_json.call_args.kwargs["prompt"]
+    assert "Synthetic candidate evidence for this isolated test." in prompt
+    assert "Apex Audio Systems" in prompt
+    assert "Audio Systems Analyst" in prompt
+    assert "Alex Taylor" in prompt
+    assert [(m["channel"], m["body"], m["subject"]) for m in msgs] == [
+        (m["channel"], m["body"], m["subject"]) for m in mock_response["messages"]
+    ]
+    assert all(m["status"] == "draft" and m["contact_id"] == contact["id"] for m in msgs)
+    saved_contact = next(
+        c for c in crud.get_job_by_id("test-job-knock-01")["contacts"]
+        if c["id"] == contact["id"]
+    )
+    assert {m["id"] for m in saved_contact["messages"]} == {m["id"] for m in msgs}
 
     # 5. Cleanup
     crud.delete_job("test-job-knock-01")

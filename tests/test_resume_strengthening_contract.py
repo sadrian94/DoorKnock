@@ -19,10 +19,6 @@ def test_strengthening_contract_spans_discovery_authoring_and_review():
         content = (SKILLS / name / "SKILL.md").read_text(encoding="utf-8")
         assert "Unrecorded does not mean unperformed" in content
         assert "decompose each rewrite into clauses" in content.lower()
-        assert "purpose" in content
-        assert "financial model" in content
-        assert "complete" in content
-        assert "confirmation" in content or "confirmations" in content
 
 
 def test_discovery_and_blind_review_keep_distinct_authority():

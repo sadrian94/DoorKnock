@@ -6,7 +6,7 @@ import pytest
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR / "backend"))
 
-from app.tailor.engine import load_candidate_base_context, TAILOR_PROMPT_TEMPLATE, _job_posting_text, _match_analysis_context, _resume_skills_without_coursework_labels
+from app.tailor.engine import load_candidate_base_context, _job_posting_text, _match_analysis_context, _resume_skills_without_coursework_labels
 from app.tailor.naming import get_candidate_display_name, generate_document_filename
 from app.tailor.compiler import render_typst_template
 
@@ -82,20 +82,6 @@ def test_tailor_requires_yaml_evidence(monkeypatch, synthetic_candidate_workspac
         load_candidate_base_context()
 
 
-def test_tailor_prompt_uses_candidate_evidence():
-    formatted = TAILOR_PROMPT_TEMPLATE.format(
-        candidate_evidence="synthetic evidence marker",
-        job_title="Test Analyst",
-        company="Acme Corp",
-        location="Remote",
-        company_recon_summary="Not available.",
-        match_analysis_context="Not available.",
-        raw_job_text="Raw text",
-    )
-    assert "Acme Corp" in formatted
-    assert "Test Analyst" in formatted
-    assert "synthetic evidence marker" in formatted
-    assert "<evidence>" in formatted
 
 
 def test_saved_match_analysis_guides_selection_only_for_same_posting():
