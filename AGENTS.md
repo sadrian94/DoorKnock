@@ -29,6 +29,16 @@ DoorKnock is a candidate-agnostic, local job application and document tailoring 
 
 Read a relevant skill directly from `.agents/skills/<name>/SKILL.md`. If a named skill is unavailable, say so and continue only with steps whose rules are clear from this contract and the user's request. Do not invent a workflow or claim a tool was used.
 
+### Subagent dispatch (when available)
+
+Keep the main conversation as coordinator for user confirmations, drafting, and state writes. When `.agents/plugins/doorknock-agents/` subagents are loaded, dispatch them as read-only specialists:
+
+- **Independent blind resume/cover-letter roast (`doorknock-roast-reviewer`)**: Mandatory whenever independent review/roast is requested. Pass ONLY the target document (PDF path or text), target role/level, and optional JD; NEVER pass `master_evidence.yaml`, `profile.yaml`, prior scores, or author defenses.
+- **Adversarial claim & De-AI audit (`doorknock-claim-auditor`)**: Dispatch before compiling an authored package (or checking outreach caps/De-AI) when independent fact-checking against `master_evidence.yaml` is needed. Apply fixes in the coordinator; never auto-publish.
+- **Target/gatekeeper recon digest (`doorknock-scout-analyst`)**: Dispatch for noisy multi-source company/role/contact searches so raw snippets stay out of the main context. Coordinator reviews findings with the user before saving to `data/jobs.db`.
+- **Repository QA & PII check (`doorknock-dev-verifier`)**: Dispatch after code, skill, or doc edits to verify `git diff`, system-vs-data separation, `uv run pytest tests`, and frontend builds without modifying files.
+- **Keep inline**: `doorknock-interview`, `doorknock-cadence`, and `doorknock-refine` user confirmations stay in the main conversation.
+
 ## Data and privacy boundaries
 
 - `workspace/profile.yaml` holds candidate identity, contact details, and personal URL metadata. `workspace/master_resume/master_evidence.yaml` is the maintained source for candidate experience, education, skills, projects, and claims. `workspace/applications/` holds private tailored outputs; `workspace/interviews/` holds brief practice progress.

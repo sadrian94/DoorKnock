@@ -97,22 +97,28 @@ def validate_resume_evidence(resume: dict[str, Any], evidence_context: str) -> N
     experiences = evidence.get("experiences") or []
     if not isinstance(experiences, list):
         raise ValueError("Candidate experiences must be a list")
-    for position, entry in enumerate(resume.get("experiences", [])):
-        if not isinstance(entry, dict):
-            raise ValueError("Resume experience must be an object")
-        match = next((source for source in experiences if isinstance(source, dict)
-                      and _normal(source.get("company")) == _normal(entry.get("company"))), None)
-        if match is None:
-            raise ValueError("Resume employer is absent from master evidence")
-        for output_key, evidence_key in (("title", "role"), ("dates", "dates"), ("location", "location")):
-            if _normal(entry.get(output_key)) != _normal(match.get(evidence_key)):
-                raise ValueError(f"Resume experience {output_key} differs from master evidence")
-        if v2:
-            _check_numbers(entry.get("bullets", []), _eligible_numbers(match))
-            for offset, text in enumerate(entry.get("bullets", [])):
-                path = f"experiences/{position}/bullets/{offset}"
-                paths[path] = text
-                scopes[path] = {match["id"], *(b["id"] for b in match["bullets"])}
+    for section_name in ("experiences", "additional_experiences"):
+        entries = resume.get(section_name, [])
+        if entries is None:
+            entries = []
+        if not isinstance(entries, list):
+            raise ValueError(f"Resume {section_name} must be a list")
+        for position, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                raise ValueError("Resume experience must be an object")
+            match = next((source for source in experiences if isinstance(source, dict)
+                          and _normal(source.get("company")) == _normal(entry.get("company"))), None)
+            if match is None:
+                raise ValueError("Resume employer is absent from master evidence")
+            for output_key, evidence_key in (("title", "role"), ("dates", "dates"), ("location", "location")):
+                if _normal(entry.get(output_key)) != _normal(match.get(evidence_key)):
+                    raise ValueError(f"Resume experience {output_key} differs from master evidence")
+            if v2:
+                _check_numbers(entry.get("bullets", []), _eligible_numbers(match))
+                for offset, text in enumerate(entry.get("bullets", [])):
+                    path = f"{section_name}/{position}/bullets/{offset}"
+                    paths[path] = text
+                    scopes[path] = {match["id"], *(b["id"] for b in match["bullets"])}
 
     education = evidence.get("education") or []
     if not isinstance(education, list):
@@ -160,8 +166,8 @@ def validate_resume_evidence(resume: dict[str, Any], evidence_context: str) -> N
 
     source_numbers = _numbers(evidence_context)
     claim_text = [resume.get("summary", "")]
-    for section in ("experiences", "projects"):
-        for entry in resume.get(section, []):
+    for section in ("experiences", "additional_experiences", "projects"):
+        for entry in resume.get(section, []) or []:
             claim_text.extend(entry.get("bullets", []))
     claim_text.append(resume.get("certifications", ""))
     unsupported = set().union(*(_numbers(value) for value in claim_text)) - source_numbers

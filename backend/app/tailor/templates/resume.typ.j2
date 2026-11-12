@@ -12,6 +12,7 @@
   font: ("Times New Roman", "Liberation Serif", "TeX Gyre Termes"),
   size: base-font-size,
   fill: rgb("#000000"),
+  hyphenate: false,
 )
 #set par(
   justify: true,
@@ -86,11 +87,11 @@
     {% if candidate.location and candidate.location.strip() %}{{ candidate.location | typst_markup }} #text(weight: "bold")[|] {% endif %}
     {{ candidate.phone | typst_markup }} #text(weight: "bold")[|]
     #let email = {{ candidate.email | typst_string }}
-    #link("mailto:" + email)[#email] #text(weight: "bold")[|]
+    #link("mailto:" + email)[#email]{% if candidate.linkedin and candidate.linkedin.strip() %} #text(weight: "bold")[|]
     #let linkedin = {{ candidate.linkedin | typst_string }}
-    #link("https://" + linkedin)[#linkedin] #text(weight: "bold")[|]
+    #link("https://" + linkedin)[#linkedin]{% endif %}{% if candidate.github and candidate.github.strip() %} #text(weight: "bold")[|]
     #let github = {{ candidate.github | typst_string }}
-    #link("https://" + github)[#github]
+    #link("https://" + github)[#github]{% endif %}
   ] \
   #v(1.5pt)
   #text(size: 8.4pt, style: "italic", fill: rgb("#222222"))[{{ candidate.work_authorization | typst_markup }}]
@@ -103,11 +104,12 @@
 {{ resume.summary | typst_markup }}
 
 // -------------------------------------------------------------
-// EXPERIENCE
+// EXPERIENCE & ADDITIONAL EXPERIENCE
 // -------------------------------------------------------------
-{% if resume.experiences %}
-#section-heading("Experience")
-{% for exp in resume.experiences %}
+{% for exp_section_title, exp_entries in [("Experience", resume.experiences), ("Additional Experience", resume.additional_experiences)] %}
+{% if exp_entries %}
+#section-heading({{ exp_section_title | typst_string }})
+{% for exp in exp_entries %}
 #experience-header(
   {{ exp.company | typst_string }},
   {{ exp.dates | typst_string }},
@@ -123,6 +125,7 @@
 #v(2.5pt)
 {% endfor %}
 {% endif %}
+{% endfor %}
 
 // -------------------------------------------------------------
 // SKILLS

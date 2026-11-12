@@ -1,0 +1,6 @@
+{
+  "name": "doorknock-agents",
+  "displayName": "DoorKnock Subagents",
+  "version": "1.0.0",
+  "description": "Candidate-agnostic subagents for DoorKnock: blind resume/cover-letter review, claim and De-AI auditing, target reconnaissance synthesis, and repository QA/PII verification."
+}

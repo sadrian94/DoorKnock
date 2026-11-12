@@ -344,3 +344,65 @@ async def test_v2_publication_requires_review_and_blocks_pending_metrics(tmp_pat
     else:
         data["cover_letter"]["paragraphs"] = ["Investigated transaction discrepancies."]
     assert (await publish(tmp_path, data, document_type=document_type))["success"]
+
+
+@pytest.mark.anyio
+async def test_additional_experiences_enforces_v2_evidence_and_alignment(tmp_path, candidate, monkeypatch):
+    import yaml
+    from app.evidence_schema import migrate_evidence_v1
+    from app.tailor.alignment import keyword_report, validate_claim_review
+
+    base = engine.load_candidate_base_context()
+    evidence = migrate_evidence_v1(yaml.safe_load(EVIDENCE), recorded_at="2026-01-12")
+    src_refs = evidence["experiences"][0]["source_refs"]
+    evidence["experiences"].append({
+        "id": "exp-contract-qa",
+        "evidence_class": "paid_work",
+        "status": "recorded",
+        "company": "Quality Annotators",
+        "role": "Data Reviewer (Contract)",
+        "dates": "2026-Present",
+        "location": "Remote",
+        "source_refs": src_refs,
+        "bullets": [{
+            "id": "qa-volume",
+            "text": "Reviewed 200 text items against source guides.",
+            "status": "confirmed",
+            "source_refs": src_refs,
+            "metrics": [],
+        }],
+    })
+    base["candidate_evidence_context"] = yaml.safe_dump(evidence)
+    monkeypatch.setattr(engine, "load_candidate_base_context", lambda: base)
+
+    data = package()
+    data["keyword_alignment"][0]["placements"] = ["summary", "additional_experiences"]
+    data["resume"]["additional_experiences"] = [{
+        "company": "Quality Annotators",
+        "title": "Data Reviewer (Contract)",
+        "dates": "2026-Present",
+        "location": "Remote",
+        "bullets": ["Reviewed 200 items for discrepancies against source guides."],
+    }]
+    # Missing claim_evidence for numeric bullet in additional_experiences must fail.
+    with pytest.raises(ValueError, match="claim_evidence"):
+        await publish(tmp_path, data)
+    assert not (tmp_path / "resume" / "v001").exists()
+
+    data["resume"]["claim_evidence"] = {"additional_experiences/0/bullets/0": ["qa-volume"]}
+    res = await publish(tmp_path, data)
+    assert res["success"], res.get("error")
+    report = keyword_report(
+        data["keyword_alignment"], {"status": "ready", "findings": []},
+        data["resume"], "resume", POSTING, yaml.safe_dump(evidence), "agent",
+    )
+    assert "additional_experiences" in report["coverage"][0]["found_in"]
+    validate_claim_review({
+        "status": "needs_revision",
+        "findings": [{
+            "section": "additional_experiences",
+            "quote": "Reviewed 200 items",
+            "issue": "Sample audit finding",
+            "suggestion": "Specify text items",
+        }],
+    }, data["resume"], "resume")

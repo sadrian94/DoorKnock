@@ -64,7 +64,7 @@ def _contains(text: str, phrase: str) -> bool:
 def validate_alignment(rows, posting: str, index: dict, document_type: str) -> None:
     if not isinstance(rows, list) or (posting.strip() and not rows):
         raise ValueError("Keyword alignment requires a nonempty list for a posting")
-    sections = {"summary", "experiences", "projects", "skills", "education", "certifications"} if document_type == "resume" else {"paragraphs"}
+    sections = {"summary", "experiences", "additional_experiences", "projects", "skills", "education", "certifications"} if document_type == "resume" else {"paragraphs"}
     seen = set()
     for row in rows:
         if not isinstance(row, dict):
@@ -114,6 +114,10 @@ def document_sections(payload: dict, document_type: str) -> dict[str, str]:
     def fields(entry, keys):
         return "\n".join(str(entry.get(key, "")) for key in keys)
 
+    def experience_text(entries):
+        return "\n".join(fields(e, ("company", "title", "dates", "location")) + "\n" +
+                         "\n".join(e.get("bullets", [])) for e in (entries or []))
+
     if document_type == "cover_letter":
         return {"header": fields(payload, ("recipient_title", "company_name", "company_location",
                                            "date", "subject_role", "salutation")),
@@ -121,8 +125,8 @@ def document_sections(payload: dict, document_type: str) -> dict[str, str]:
     return {
         "header": payload.get("target_role", ""),
         "summary": payload.get("summary", ""),
-        "experiences": "\n".join(fields(e, ("company", "title", "dates", "location")) + "\n" +
-                                      "\n".join(e.get("bullets", [])) for e in payload.get("experiences", [])),
+        "experiences": experience_text(payload.get("experiences", [])),
+        "additional_experiences": experience_text(payload.get("additional_experiences", [])),
         "projects": "\n".join(fields(p, ("name",)) + "\n" + "\n".join(p.get("bullets", []))
                                   for p in payload.get("projects", [])),
         "skills": "\n".join(s.get("category", "") + "\n" + s.get("items", s.get("skills", ""))

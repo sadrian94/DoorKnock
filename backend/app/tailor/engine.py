@@ -395,6 +395,7 @@ async def tailor_application_documents(
             "target_role": target_role_header,
             "summary": (resume_payload or {}).get("summary", ""),
             "experiences": (resume_payload or {}).get("experiences", []),
+            "additional_experiences": (resume_payload or {}).get("additional_experiences", []),
             "projects": projects,
             "skills": _resume_skills_without_coursework_labels((resume_payload or {}).get("skills", [])),
             "education": education,
@@ -403,7 +404,7 @@ async def tailor_application_documents(
     }
 
     letter_context = {
-        "candidate": candidate,
+        "candidate": active_candidate,
         "letter": {
             "recipient_title": (letter_payload or {}).get("recipient_title", "Hiring Team"),
             "company_name": (letter_payload or {}).get("company_name", company),

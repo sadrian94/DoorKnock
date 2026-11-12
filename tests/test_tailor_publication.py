@@ -340,5 +340,50 @@ def test_resume_omits_empty_optional_sections(tmp_path):
     assert result["success"], result.get("error")
     text = PdfReader(result["pdf_path"]).pages[0].extract_text()
     assert "EXPERIENCE" in text
+    assert "ADDITIONAL EXPERIENCE" not in text
     assert "PROJECTS" not in text
     assert "CERTIFICATIONS" not in text
+
+
+@pytest.mark.anyio
+async def test_additional_experiences_and_optional_github_suppression(tmp_path, monkeypatch, synthetic_candidate):
+    resume_context = {
+        "candidate": {"name": "Alex Taylor", "location": "Remote", "phone": "(555) 019-2834",
+                      "email": "alex@example.com", "linkedin": "example.com/profile",
+                      "github": "", "work_authorization": "Authorized"},
+        "resume": {
+            "target_role": "OPERATIONS ANALYST",
+            "summary": "Operations analyst with reconciliation and documentation experience.",
+            "experiences": [{"company": "Apex Logistics", "dates": "2024-2025",
+                             "title": "Analyst", "location": "Remote",
+                             "bullets": ["Checked source records and documented exceptions for review."]}],
+            "additional_experiences": [{"company": "Side Quality Co.", "dates": "2026-Present",
+                                        "title": "Reviewer (Contract)", "location": "Remote",
+                                        "bullets": ["Audited written records against source documentation."]}],
+            "skills": [], "projects": [], "education": [], "certifications": "",
+        },
+    }
+    resume_res = compiler.compile_document("resume.typ.j2", resume_context, tmp_path, "resume")
+    assert resume_res["success"], resume_res.get("error")
+    resume_text = PdfReader(resume_res["pdf_path"]).pages[0].extract_text()
+    assert "ADDITIONAL EXPERIENCE" in resume_text
+    assert "Side Quality Co." in resume_text
+    assert "example.com/profile" in resume_text
+    assert "example.com/profile |" not in resume_text
+
+    monkeypatch.setattr(engine, "get_resume_settings", lambda: {"require_single_page": True})
+    job = {"id": "synthetic-job-gh", "company": "Apex Logistics", "title": "Analyst", "raw_text": ""}
+    letter_res = await engine.tailor_application_documents(
+        job,
+        document_type="cover_letter",
+        custom_output_dir=tmp_path,
+        authored_documents={
+            "candidate": {"github": ""},
+            "cover_letter": {"paragraphs": ["Checked source records and documented exceptions for review."]},
+        },
+    )
+    assert letter_res["success"], letter_res.get("compilation")
+    letter_text = PdfReader(letter_res["pdf"]).pages[0].extract_text()
+    assert "example.com/profile" in letter_text
+    assert "example.com/code" not in letter_text
+    assert "example.com/profile |" not in letter_text

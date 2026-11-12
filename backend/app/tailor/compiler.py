@@ -109,9 +109,9 @@ def compile_document(
             resume = context.get("resume", {})
             required_text = ["Summary"]
             required_text.extend(heading for field, heading in (
-                ("experiences", "Experience"), ("skills", "Skills"),
-                ("projects", "Projects"), ("education", "Education"),
-                ("certifications", "Certifications"),
+                ("experiences", "Experience"), ("additional_experiences", "Additional Experience"),
+                ("skills", "Skills"), ("projects", "Projects"),
+                ("education", "Education"), ("certifications", "Certifications"),
             ) if resume.get(field))
         else:
             required_text = ["Dear", "Sincerely"]
