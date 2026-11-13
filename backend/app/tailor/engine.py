@@ -4,10 +4,13 @@ import logging
 import re
 import shutil
 import uuid
+import os
+from contextlib import contextmanager
 from ..clock import local_today, utc_now
 from pathlib import Path
 from typing import Dict, Any, Optional
 import yaml
+from pypdf import PdfReader
 
 from ..config import (
     WORKSPACE_DIR,
@@ -23,13 +26,26 @@ from .alignment import (
     build_rewrite_context,
 )
 from .naming import (
-    sanitize_slug,
     generate_document_filename,
-    generate_application_workspace_dirname,
     get_candidate_display_name,
 )
 
 logger = logging.getLogger("doorknock.tailor.engine")
+
+
+@contextmanager
+def _publication_lock(app_dir: Path):
+    """Fail closed on concurrent publication across processes."""
+    lock = app_dir / ".tailor-publication.lock"
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError as exc:
+        raise ValueError("Another publication is active or its lock needs inspection") from exc
+    try:
+        yield
+    finally:
+        os.close(fd)
+        lock.unlink(missing_ok=True)
 
 
 def _resume_skills_without_coursework_labels(skills):
@@ -55,19 +71,30 @@ def _application_dir(job_data: Dict[str, Any], company: str, title: str, date_st
     if APPLICATIONS_DIR.is_dir():
         matching = []
         for directory in APPLICATIONS_DIR.iterdir():
-            metadata_path = directory / "workspace-metadata.json"
-            if not directory.is_dir() or not metadata_path.is_file():
+            if not directory.is_dir():
                 continue
-            try:
-                metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                continue
-            if metadata.get("application_key") == key or (job_data.get("id") and metadata.get("job_id") == job_data["id"]):
-                matching.append(directory)
+            sources = [directory / "workspace-metadata.json"]
+            sources.extend(directory.glob(".tailor-preview-*/preview.json"))
+            for metadata_path in sources:
+                try:
+                    raw = metadata_path.read_bytes()
+                    if metadata_path.name == "preview.json":
+                        receipt = metadata_path.parent.with_suffix(".sha256")
+                        if _preview_digest(raw, directory) != receipt.read_text(encoding="utf-8"):
+                            continue
+                    metadata = json.loads(raw)
+                except (OSError, ValueError):
+                    continue
+                if isinstance(metadata, dict) and (metadata.get("application_key") == key or (
+                        job_data.get("id") and metadata.get("job_id") == job_data["id"])):
+                    matching.append(directory)
+                    break
+        if len(matching) > 1:
+            raise ValueError("Multiple application directories share this key; reconcile them before tailoring")
         if matching:
-            return max(matching, key=lambda directory: directory.stat().st_mtime)
-    directory_name = generate_application_workspace_dirname(company, title, date_str=date_stamp)
-    return APPLICATIONS_DIR / f"{directory_name}-{sanitize_slug(key, max_len=16)}"
+            return matching[0]
+    # Stable even before the first preview is finished, across dates and label edits.
+    return APPLICATIONS_DIR / f"application-{hashlib.sha256(key.encode('utf-8')).hexdigest()}"
 
 def _next_version_number(app_dir: Path, doc_type: str) -> int:
     from ..documents import scan_document_versions
@@ -77,6 +104,145 @@ def _next_version_number(app_dir: Path, doc_type: str) -> int:
         if match:
             highest = max(highest, int(match.group(1)))
     return highest + 1
+
+def _preview_digest(metadata: bytes, app_dir: Path) -> str:
+    return hashlib.sha256(str(app_dir.resolve()).encode("utf-8") + b"\0" + metadata).hexdigest()
+
+
+def publish_reviewed_preview(preview_dir: Path, expected_pdf_sha256: str) -> Dict[str, Any]:
+    """Publish the exact previously previewed bytes, without recompiling."""
+    preview_dir = Path(preview_dir)
+    if preview_dir.is_symlink() or not re.fullmatch(r"\.tailor-preview-[0-9a-f]{32}", preview_dir.name):
+        raise ValueError("Invalid preview directory")
+    if not re.fullmatch(r"[0-9a-f]{64}", expected_pdf_sha256):
+        raise ValueError("Expected reviewed PDF SHA256 is required")
+    with _publication_lock(preview_dir.parent):
+        return _publish_reviewed_preview_locked(preview_dir, expected_pdf_sha256)
+
+
+def _publish_reviewed_preview_locked(preview_dir: Path, expected_pdf_sha256: str) -> Dict[str, Any]:
+    # An independent compilation receipt binds the editable bundle's metadata.
+    # This is an integrity check, not a sandbox against owners of the local disk.
+    receipt = preview_dir.with_suffix(".sha256")
+    metadata_path = preview_dir / "preview.json"
+    if receipt.is_symlink() or metadata_path.is_symlink():
+        raise ValueError("Invalid preview receipt")
+    metadata = metadata_path.read_bytes()
+    if _preview_digest(metadata, preview_dir.parent) != receipt.read_text(encoding="utf-8"):
+        raise ValueError("Preview metadata changed since compilation")
+    preview = json.loads(metadata)
+    if not isinstance(preview, dict):
+        raise ValueError("Invalid preview metadata")
+    document_type = preview.get("document_type")
+    if document_type not in ("resume", "cover_letter"):
+        raise ValueError("Invalid preview document type")
+    base_name = preview.get("base_name")
+    if not isinstance(base_name, str) or not base_name or Path(base_name).name != base_name or '/' in base_name or '\\' in base_name:
+        raise ValueError("Invalid preview filename")
+    names = (f"{base_name}.pdf", f"{base_name}.typ", "keyword-review.json")
+    if {path.name for path in preview_dir.iterdir()} != {*names, "preview.json"}:
+        raise ValueError("Unexpected preview artifacts")
+    hashes = preview.get("hashes")
+    if not isinstance(hashes, dict) or set(hashes) != set(names):
+        raise ValueError("Invalid preview hashes")
+    for name in names:
+        path = preview_dir / name
+        if path.is_symlink() or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != hashes[name]:
+            raise ValueError("Preview artifact changed since compilation")
+    if hashes[names[0]] != expected_pdf_sha256:
+        raise ValueError("Reviewed PDF hash does not match preview")
+    reader = PdfReader(preview_dir / names[0])
+    page_count = len(reader.pages)
+    text_chars = len("".join(page.extract_text() or "" for page in reader.pages).strip())
+    if page_count < 1 or text_chars < 100:
+        raise ValueError("Preview PDF is empty or lacks selectable text")
+    manifest = {key: preview[key] for key in (
+        "application_key", "job_id", "company", "title", "document_type", "alignment_status")}
+    manifest.update({"page_count": page_count, "text_chars": text_chars, "single_page": page_count == 1,
+                     "reviewed_pdf_sha256": expected_pdf_sha256})
+    if document_type == "resume":
+        manifest["tailor_strategy"] = preview.get("tailor_strategy")
+    result = _publish_bundle(preview_dir, base_name, manifest)
+    try:
+        receipt.unlink()
+    except OSError:
+        logger.warning("Could not remove consumed preview receipt %s", receipt)
+    return result
+
+
+def _publish_bundle(source_dir: Path, base_name: str, manifest: Dict[str, Any]) -> Dict[str, Any]:
+    """Publish under the caller's application lock; roll back on write failure."""
+    app_dir = source_dir.parent
+    document_type = manifest["document_type"]
+    if app_dir.parent.resolve() == APPLICATIONS_DIR.resolve():
+        canonical = _application_dir({"id": manifest["application_key"]}, manifest["company"], manifest["title"], "")
+        if canonical.resolve() != app_dir.resolve():
+            raise ValueError("Publication would split an existing application")
+    folder = "resume" if document_type == "resume" else "cover-letter"
+    versions_dir = app_dir / folder
+    versions_dir.mkdir(exist_ok=True)
+    number = _next_version_number(app_dir, document_type)
+    while (versions_dir / f"v{number:03d}").exists():
+        number += 1
+    version = f"v{number:03d}"
+    target_dir = versions_dir / version
+    page_limit_required = document_type == "cover_letter" or (
+        number > 1 and get_resume_settings()["require_single_page"])
+    if page_limit_required and manifest.get("page_count") != 1:
+        raise ValueError("Document no longer meets the current revision page limit")
+    manifest = dict(manifest, page_limit_required=page_limit_required)
+    manifest.update({"version": version, "created_at": utc_now().isoformat(), "success": True,
+                     "publication_protocol": "indexed-v1",
+                     "pdf": str(target_dir / f"{base_name}.pdf"), "typ": str(target_dir / f"{base_name}.typ"),
+                     "keyword_review": str(target_dir / "keyword-review.json")})
+    version_manifest = target_dir / "workspace-metadata.json"
+    latest_path = app_dir / "workspace-metadata.json"
+    if latest_path.is_file():
+        latest = json.loads(latest_path.read_text(encoding="utf-8"))
+        if not isinstance(latest, dict):
+            raise ValueError("Invalid latest document index")
+        if latest.get("application_key", manifest["application_key"]) != manifest["application_key"]:
+            raise ValueError("Preview belongs to a different application")
+    else:
+        latest = {}
+    documents = latest.get("documents")
+    if not isinstance(documents, dict):
+        documents = {}
+    legacy_version = latest.get("version")
+    if isinstance(legacy_version, str) and re.fullmatch(r"v\d+", legacy_version):
+        for legacy_type in ("resume", "cover_letter"):
+            if isinstance(latest.get(legacy_type), dict) and legacy_type not in documents:
+                documents[legacy_type] = {"version": legacy_version,
+                    "manifest": str(app_dir / "versions" / legacy_version / "workspace-metadata.json")}
+    for old_key in ("version", "created_at", "tailor_strategy", "resume", "cover_letter"):
+        latest.pop(old_key, None)
+    latest.update({key: manifest[key] for key in ("application_key", "job_id", "company", "title")})
+    previous_entry = documents.get(document_type, {})
+    committed = dict(previous_entry.get("committed_versions", {})) if isinstance(previous_entry, dict) else {}
+    committed[version] = f"{base_name}.pdf"
+    documents[document_type] = {"version": version, "manifest": str(version_manifest),
+                                "committed_versions": committed}
+    latest["documents"] = documents
+    latest_temp = app_dir / f".workspace-metadata-{uuid.uuid4().hex}.json"
+    moved = False
+    try:
+        (source_dir / "workspace-metadata.json").write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+        latest_temp.write_text(json.dumps(latest, indent=2, ensure_ascii=False), encoding="utf-8")
+        source_dir.rename(target_dir)
+        moved = True
+        # The index replacement is the commit point. Nothing fallible follows it.
+        latest_temp.replace(latest_path)
+    except Exception:
+        if moved:
+            target_dir.rename(source_dir)
+        (source_dir / "workspace-metadata.json").unlink(missing_ok=True)
+        raise
+    finally:
+        latest_temp.unlink(missing_ok=True)
+    return {"success": True, "application_dir": str(app_dir), "document_type": document_type,
+            "pdf": manifest["pdf"], "manifest": manifest}
+
 
 def _job_posting_text(job_data: Dict[str, Any]) -> str:
     """Use the full stored posting before short import summaries."""
@@ -201,6 +367,7 @@ async def tailor_application_documents(
     custom_output_dir: Optional[Path] = None,
     gemini_client: Optional[AIClient] = None,
     authored_documents: Optional[Dict[str, Any]] = None,
+    preview_only: bool = False,
 ) -> Dict[str, Any]:
     """
     Generate and publish one independently versioned document.
@@ -445,7 +612,6 @@ async def tailor_application_documents(
     stage_dir = app_dir / f".tailor-staging-{uuid.uuid4().hex}"
     stage_dir.mkdir()
     try:
-        folder = "resume" if document_type == "resume" else "cover-letter"
         template = "resume.typ.j2" if document_type == "resume" else "cover_letter.typ.j2"
         context = resume_context if document_type == "resume" else letter_context
         base_name = generate_document_filename(document_type, company, candidate_name=candidate["display_name"])
@@ -461,74 +627,52 @@ async def tailor_application_documents(
         (stage_dir / "keyword-review.json").write_text(
             json.dumps(review_report, indent=2, ensure_ascii=False), encoding="utf-8")
 
-        versions_dir = app_dir / folder
-        versions_dir.mkdir(exist_ok=True)
-        version_number = _next_version_number(app_dir, document_type)
-        while True:
-            version = f"v{version_number:03d}"
-            target_dir = versions_dir / version
-            if target_dir.exists():
-                version_number += 1
-                continue
+        if preview_only:
+            pdf_name = f"{base_name}.pdf"
+            typ_name = f"{base_name}.typ"
+            files = (pdf_name, typ_name, "keyword-review.json")
+            hashes = {name: hashlib.sha256((stage_dir / name).read_bytes()).hexdigest() for name in files}
+            preview = {
+                "application_key": _application_key(job_data), "job_id": job_data.get("id"),
+                "company": company, "title": title, "document_type": document_type,
+                "base_name": base_name, "hashes": hashes,
+                "page_count": compiled.get("page_count"), "text_chars": compiled.get("text_chars"),
+                "single_page": compiled.get("is_single_page", False),
+                "page_limit_required": require_single_page if document_type == "resume" else True,
+                "alignment_status": review_report["status"], "tailor_strategy": strategy,
+            }
+            (stage_dir / "preview.json").write_text(json.dumps(preview, ensure_ascii=False, indent=2), encoding="utf-8")
+            preview_dir = app_dir / f".tailor-preview-{uuid.uuid4().hex}"
+            receipt = preview_dir.with_suffix(".sha256")
             try:
-                stage_dir.rename(target_dir)
-                break
-            except FileExistsError:
-                version_number += 1
+                receipt.write_text(_preview_digest((stage_dir / "preview.json").read_bytes(), app_dir), encoding="utf-8")
+                stage_dir.rename(preview_dir)
+            except Exception:
+                receipt.unlink(missing_ok=True)
+                raise
+            compiled = dict(compiled, pdf_path=str(preview_dir / pdf_name), typ_path=str(preview_dir / typ_name))
+            return {"success": True, "preview_dir": str(preview_dir),
+                    "pdf": str(preview_dir / pdf_name), "pdf_sha256": hashes[pdf_name],
+                    "keyword_review": str(preview_dir / "keyword-review.json"),
+                    "compilation": compiled}
 
-        pdf = target_dir / f"{base_name}.pdf"
-        typ = target_dir / f"{base_name}.typ"
         manifest = {
             "application_key": _application_key(job_data),
             "job_id": job_data.get("id"),
             "company": company,
             "title": title,
             "document_type": document_type,
-            "version": version,
-            "created_at": utc_now().isoformat(),
-            "pdf": str(pdf),
-            "typ": str(typ),
             "single_page": compiled.get("is_single_page", False),
             "page_limit_required": require_single_page if document_type == "resume" else True,
             "success": True,
             "page_count": compiled.get("page_count"),
             "text_chars": compiled.get("text_chars"),
-            "keyword_review": str(target_dir / "keyword-review.json"),
             "alignment_status": review_report["status"],
         }
         if document_type == "resume":
             manifest["tailor_strategy"] = strategy
-        version_manifest = target_dir / "workspace-metadata.json"
-        version_manifest.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
-        latest_path = app_dir / "workspace-metadata.json"
-        if latest_path.is_file():
-            try:
-                latest = json.loads(latest_path.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                latest = {}
-        else:
-            latest = {}
-        documents = latest.get("documents")
-        if not isinstance(documents, dict):
-            documents = {}
-        legacy_version = latest.get("version")
-        if isinstance(legacy_version, str) and re.fullmatch(r"v\d+", legacy_version):
-            for legacy_type in ("resume", "cover_letter"):
-                if isinstance(latest.get(legacy_type), dict) and legacy_type not in documents:
-                    documents[legacy_type] = {
-                        "version": legacy_version,
-                        "manifest": str(app_dir / "versions" / legacy_version / "workspace-metadata.json"),
-                    }
-        for old_key in ("version", "created_at", "tailor_strategy", "resume", "cover_letter"):
-            latest.pop(old_key, None)
-        latest.update({key: manifest[key] for key in ("application_key", "job_id", "company", "title")})
-        documents[document_type] = {"version": version, "manifest": str(version_manifest)}
-        latest["documents"] = documents
-        latest_temp = app_dir / f".workspace-metadata-{uuid.uuid4().hex}.json"
-        latest_temp.write_text(json.dumps(latest, indent=2, ensure_ascii=False), encoding="utf-8")
-        latest_temp.replace(latest_path)
-        return {"success": True, "application_dir": str(app_dir), "document_type": document_type,
-                "pdf": str(pdf), "manifest": manifest}
+        with _publication_lock(app_dir):
+            return _publish_bundle(stage_dir, base_name, manifest)
     finally:
         if stage_dir.exists():
             # This path was created in this call and must stay inside the selected application directory.

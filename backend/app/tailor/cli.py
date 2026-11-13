@@ -11,7 +11,8 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app import crud
-from app.tailor.engine import tailor_application_documents
+from app.config import APPLICATIONS_DIR
+from app.tailor.engine import tailor_application_documents, publish_reviewed_preview
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -23,15 +24,35 @@ async def run_cli():
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--job-id", type=str, help="Target Job ID from DoorKnock database")
     group.add_argument("--jd-file", type=str, help="Path to raw JD text file")
+    group.add_argument("--publish-preview", type=Path, help="Publish a visually reviewed preview directory")
 
     parser.add_argument("--company", type=str, default="", help="Company name (if using --jd-file)")
     parser.add_argument("--title", type=str, default="", help="Job title (if using --jd-file)")
     parser.add_argument("--location", type=str, default="Remote/Hybrid", help="Job location")
-    parser.add_argument("--document-type", choices=("resume", "cover_letter"), required=True)
-    parser.add_argument("--authored-json", type=Path, required=True,
+    parser.add_argument("--document-type", choices=("resume", "cover_letter"))
+    parser.add_argument("--authored-json", type=Path,
                         help="Agent-authored JSON for the selected document; CLI never calls the AI provider")
+    parser.add_argument("--preview-only", action="store_true", help="Create an unpublished preview")
+    parser.add_argument("--reviewed-pdf-sha256", help="SHA256 of the exact visually reviewed preview PDF")
 
     args = parser.parse_args()
+
+    if args.publish_preview:
+        if args.preview_only or args.authored_json or args.document_type or not args.reviewed_pdf_sha256:
+            parser.error("--publish-preview requires --reviewed-pdf-sha256 and no authoring options")
+        preview = args.publish_preview
+        try:
+            preview.resolve().relative_to(APPLICATIONS_DIR.resolve())
+            res = publish_reviewed_preview(preview, args.reviewed_pdf_sha256)
+        except (ValueError, OSError, KeyError) as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            sys.exit(1)
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        return
+    if not args.document_type or not args.authored_json:
+        parser.error("--document-type and --authored-json are required for authoring")
+    if args.reviewed_pdf_sha256:
+        parser.error("--reviewed-pdf-sha256 is only valid with --publish-preview")
 
     if args.job_id:
         job = crud.get_job_by_id(args.job_id)
@@ -56,7 +77,7 @@ async def run_cli():
     print(f"Tailoring {args.document_type} for {job_data.get('title')} at {job_data.get('company')}...")
     authored_documents = json.loads(args.authored_json.read_text(encoding="utf-8"))
     res = await tailor_application_documents(job_data, document_type=args.document_type,
-                                             authored_documents=authored_documents)
+                                             authored_documents=authored_documents, preview_only=args.preview_only)
 
     if not res.get("success"):
         print("Error: " + res.get("error", "Document tailoring or Typst compilation failed."), file=sys.stderr)
@@ -64,6 +85,9 @@ async def run_cli():
             print(f"{finding['section']}: {finding['issue']} — {finding['suggestion']}", file=sys.stderr)
         sys.exit(1)
 
+    if args.preview_only:
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        return
     manifest = res.get("manifest", {})
     strategy = manifest.get("tailor_strategy", {})
     print("\n" + "="*60)

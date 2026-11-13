@@ -132,5 +132,8 @@ def compile_document(
         # If achieved 1-page fit, stop adjusting
         if last_res["success"]:
             break
+        # A different layout can only fix an overflowing resume, not missing text.
+        if page_count == 0 or not text_complete:
+            break
 
     return last_res

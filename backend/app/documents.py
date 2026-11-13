@@ -108,6 +108,15 @@ def scan_document_versions(app_dir: Path, doc_type: str) -> Dict[str, Any]:
     sub_folder_name = "resume" if doc_type == "resume" else "cover-letter"
     target_dir = app_dir / sub_folder_name
     versions: List[Dict[str, Any]] = []
+    # Read a single atomic index snapshot. New publications are visible only after
+    # their index replacement, never merely because a version directory appeared.
+    try:
+        index = json.loads((app_dir / "workspace-metadata.json").read_text(encoding="utf-8"))
+        committed = index.get("documents", {}).get(doc_type, {}).get("committed_versions", {})
+        if not isinstance(committed, dict):
+            committed = {}
+    except (OSError, ValueError, AttributeError):
+        committed = {}
 
     # Read previously published paired versions as well as independent versions.
     versions_dir = app_dir / "versions"
@@ -127,6 +136,19 @@ def scan_document_versions(app_dir: Path, doc_type: str) -> Dict[str, Any]:
         v_dirs.sort(key=lambda d: _normalize_version_key(d.name))
 
         for vd in v_dirs:
+            manifest_path = vd / "workspace-metadata.json"
+            try:
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                manifest = {}
+            if (isinstance(manifest, dict) and manifest.get("publication_protocol") == "indexed-v1") or (vd / "preview.json").exists():
+                filename = committed.get(vd.name)
+                if not isinstance(filename, str) or Path(filename).name != filename or "/" in filename or "\\" in filename:
+                    continue
+                chosen_pdf = vd / filename
+                if chosen_pdf.suffix.lower() == ".pdf" and chosen_pdf.is_file() and not chosen_pdf.is_symlink():
+                    versions.append(_get_file_info(chosen_pdf, vd.name))
+                continue
             # Look for final.pdf or letter.pdf or source.pdf or any .pdf
             pdf_candidates = [
                 vd / "final.pdf",
