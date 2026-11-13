@@ -32,7 +32,7 @@ Read the supplied draft/package alongside `workspace/master_resume/master_eviden
 4. **Selection & Order Policy**:
    - Verify alignment with `.agents/skills/doorknock-tailor/SKILL.md`: default reverse chronological order by end date in Experience (ongoing roles first) unless an alternative labelled grouping was explicitly approved; no artificial omission of 1–3 work entries without authorization; no unapproved fixed multi-version churn.
 5. **De-AI & Outreach Limits**:
-   - Cover letters: check 4-phase flow (Hook, Grounded Proof / War Story, Domain & Operational Context, Conviction & Boundaries) and flag generative filler (`directly aligns with`, `testament to`, `welcome the opportunity to discuss`, `Holding a degree...`, `foster`, `elevate`, `harness`, `seamless`, verbatim JD parroting).
+   - Cover letters: assess role-relevant structure, concrete supported examples and natural expression; flag generic filler and unsupported employer assumptions without requiring a fixed four-phase flow, technical failure story or banned-word list.
    - Outreach drafts: compute and verify exact character/word counts (`LinkedIn Connection Note <= 300 chars`, `Hiring Manager InMail/Email 80–120 words`, `Recruiter Ping 60–80 words`, `Peer Inquiry 70–90 words`) and flag banned chatbot openers.
 
 ## Output Format

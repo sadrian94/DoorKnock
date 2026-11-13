@@ -21,12 +21,7 @@ For an ordinary resume request, create one initial version. When the saved one-p
    - Select verified accomplishments that address the posting's stated requirements; do not claim knowledge of internal problems from inference alone.
 3. **Document-specific writing**:
    - **Resume:** Prioritize verified evidence, role relevance, standard ATS headings, useful detail, and clear bullets. Write directly about work the candidate performed: use the precise action and object, then the method or verified result that matters for this role. Do not weaken direct evidence with "helped," "exposure to," or "familiar with" unless that is the actual scope. Do not inflate ownership or attach inferred business effects to a verified action. Use selective Typst-native `*bold*` for supported outcomes or tools. Keep wording natural and concise; apply a light De-AI or Sepia pass only when a line is visibly formulaic or hard to read. Do not force conversational rhythm, a banned-word list, or a prose rewrite across the whole resume.
-   - **Cover letter:** Apply the in-project Sepia professional standard and 4-phase architecture:
-     1. *Hook*: Open with a priority stated in the posting and the candidate's relevant approach; do not open with "I am writing to apply..." or generic introductions. Do not invent employer losses, incidents, or internal problems from recon or general industry assumptions.
-     2. *Grounded Proof / War Story*: Highlight a concrete technical accomplishment showing how the candidate structured work, enforced constraints/contracts, tested defensively, or handled failure recovery. Show actual methods and boundaries rather than bare buzzwords.
-     3. *Domain & Operational Context*: Connect verified background to real business risk and operational environment (e.g. data integrity, transaction risk, system reliability).
-     4. *Conviction & Boundaries*: Close with disciplined verification, respecting review/rollback procedures, and readiness to take ownership under technical guidance.
-     *Sepia De-AI Mandate*: Strip chatbot filler, hollow praise, repeated skill lists, and generative boilerplate (e.g. "directly aligns with", "testament to", "welcome the opportunity to discuss", "Holding a degree...", "foster", "elevate", "harness", "seamless"). Never parrot the job posting verbatim or assert inferred internal company problems as facts.
+   - **Cover letter:** Choose a structure suited to the role, using a specific connection to its priorities, one or two grounded examples, and a natural close. Show relevant actions, judgment and outcomes; use technical failure recovery, verification or rollback only when supported and relevant, not as a mandatory story. Remove generic filler and unsupported employer assumptions without enforcing a rigid paragraph count or banned-word list.
    - For either document, all claims and metrics must stay within the master evidence. Sepia review or refactor can improve wording, but cannot strengthen a claim beyond its source.
 4. **Resume Template Standard & Typst-Native Layout**:
    - Authoritative executive serif typography (**Times New Roman**).
@@ -70,6 +65,8 @@ When invoked in an agent conversation, the current agent writes and reviews the 
 
 For document-only authoring, run the authored-package validator/compiler and inspect the actual PDF; do not run the full `uv run pytest tests` suite unless repository code or tests changed. The project full-suite gate applies to code changes/commits, not private application documents. Batch material review findings into one bounded revision and re-read only the relevant source/evidence records; do not repeat broad discovery on every pass.
 
+For an explicitly approved narrow edit, reuse the existing document's applicable role/evidence analysis and package, update the affected fields and any impacted alignment or claim references, and compare all unintended content against the prior version. Do not repeat full JD discovery or redraft unrelated sections. Validate and inspect the staged PDF, preserve version history, and follow the pre-publication visual gate below.
+
 1. Read the target posting and the gitignored `workspace/master_resume/master_evidence.yaml` and `workspace/profile.yaml`. Use targeted searches and reads for role-relevant evidence, its parent confirmation limits, and supporting source records; avoid serializing or re-reading the full evidence bank on every revision. Keep candidate facts inside `workspace/`; never put them in tracked source, prompts, or tests.
 2. Build `keyword_alignment` before drafting, using the contract below. Map the main job requirements to specific verified evidence, retaining important unsupported requirements as gaps. Treat company recon as uncertain context.
    Use that map as the writing brief: read each linked source statement, identify its actual action, object, method and supported result, then rewrite that same work using equivalent JD verbs and nouns in the planned document sections. Change sentence structure and emphasis where useful; preserve domain, tools, employer/project, responsibility, seniority, provenance and metric scope. If a JD term would change the meaning, keep accurate wording and leave that term as a gap. Rewrite only the tailored document; preserve the evidence bank's original statements. The Summary synthesizes the selected experience rather than repeating the rewritten bullets.
@@ -78,8 +75,8 @@ For document-only authoring, run the authored-package validator/compiler and ins
    In the Skills section, use concise skill names without parenthetical provenance labels such as `(coursework)`. Keep coursework provenance in the master evidence and never imply paid use or production experience from it.
 4. Write the resume Summary last from its selected content. Make it a brief, natural overview for a human reader. Check every claim against evidence; remove keyword lists, unsupported target-title claims, and repeated bullet metrics.
    Read the Summary and each bullet aloud. Replace vague nouns with concrete descriptions of verified work. Preserve the original domain and the candidate's actual level of ownership.
-5. For a cover letter, write and review it independently from verified evidence and the posting following the 4-phase architecture (Hook, Grounded Proof / War Story, Domain & Operational Context, Conviction & Boundaries). If an existing resume is relevant, it may inform emphasis; generating a cover letter never regenerates the resume. Do not assert inferred internal company problems as facts.
-6. Review the completed document against every evidence boundary, including claims not covered by the keyword map. Supply `claim_review` using the contract below. Fix findings and repeat the manual review before setting `ready`; never clear findings without fixing the text. Save a UTF-8 JSON package under the gitignored application workspace. A resume package contains `tailor_strategy` and `resume`; a cover letter package contains `cover_letter`. Both new packages include `keyword_alignment` and `claim_review`. Run the local CLI with `--document-type` and `--authored-json` to compile and publish that PDF alone. Review it visually and verify text, page count, and claim fidelity before presenting it.
+5. For a cover letter, independently draft and review its role-relevant argument from verified evidence and the posting. When both documents are requested for the same role, reuse the initial JD/evidence analysis and positioning rather than repeating discovery, while writing and checking each document separately. Generating a letter never regenerates the resume. Do not assert inferred internal company problems as facts.
+6. Review the completed document against every evidence boundary, including claims not covered by the keyword map. Supply `claim_review` using the contract below. Fix findings and repeat the manual review before setting `ready`; never clear findings without fixing the text. Save a UTF-8 JSON package under the gitignored application workspace. A resume package contains `tailor_strategy` and `resume`; a cover letter package contains `cover_letter`. Both new packages include `keyword_alignment` and `claim_review`. Invoke the CLI with `--preview-only` to create an unversioned preview without changing the latest index. Inspect its actual rendered pages, text, page count, keyword review and claims. After acceptance publish using `--publish-preview <preview-directory> --reviewed-pdf-sha256 <preview-pdf-sha256>`; this moves the exact reviewed bytes, validates the preview hashes and allocates a version without recompiling. Verify the published PDF hash and index before delivery. The legacy authoring CLI without `--preview-only` still auto-publishes for compatibility and must not be used to bypass the pre-publication visual gate.
    Compare rewritten wording with its linked original statements. JD synonyms are allowed when they preserve the actual action and scope; flag wording that recasts transferable work as direct domain experience. The publication check compares exact employer, role, date, location, education, project names, and numeric claims against master evidence. It cannot judge paraphrased duties, skill context, or whether a claim is misleading, so finish the manual evidence review before compiling.
 
 ### Keyword alignment and claim-review contract
@@ -123,7 +120,7 @@ Cover letter content shape (also include the alignment and review fields above):
 ```json
 {
   "cover_letter": {
-    "paragraphs": ["<hook_paragraph>", "<war_story_paragraph>", "<domain_context_paragraph>", "<conviction_paragraph>"],
+    "paragraphs": ["<role_connection>", "<relevant_example>", "<natural_close>"],
     "recipient_title": "Engineering Hiring Team",
     "salutation": "Engineering Hiring Team"
   }
@@ -138,14 +135,22 @@ The UI endpoints use the configured provider. Resume generation includes the ali
 ### Option A: From DoorKnock Database (by Job ID)
 When the job exists in the DoorKnock database:
 ```powershell
-uv run python -m app.tailor.cli --job-id <JOB_ID> --document-type resume --authored-json <WORKSPACE_JSON_PATH>
+uv run python -m app.tailor.cli --job-id <JOB_ID> --document-type resume --authored-json <WORKSPACE_JSON_PATH> --preview-only
 ```
 
 ### Option B: From Raw JD File
 When testing a new JD outside the database:
 ```powershell
-uv run python -m app.tailor.cli --jd-file <PATH_TO_JD_FILE> --company "<COMPANY>" --title "<TITLE>" --document-type cover_letter --authored-json <WORKSPACE_JSON_PATH>
+uv run python -m app.tailor.cli --jd-file <PATH_TO_JD_FILE> --company "<COMPANY>" --title "<TITLE>" --document-type cover_letter --authored-json <WORKSPACE_JSON_PATH> --preview-only
 ```
+
+After either preview command, inspect the returned PDF, rendered pages and keyword report. Then publish the reviewed bytes without recompiling:
+
+```powershell
+uv run python -m app.tailor.cli --publish-preview <PREVIEW_DIRECTORY> --reviewed-pdf-sha256 <REVIEWED_PDF_SHA256>
+```
+
+The preview's compilation receipt is retained separately in the application directory. Do not edit preview artifacts or `preview.json`; changes invalidate the preview and require a new compile/review. A publication write failure restores the preview for retry; a publication lock conflict fails closed, so retry after the active writer finishes. An abandoned lock requires inspection, not automatic deletion. These local integrity checks do not protect against an actor deliberately rewriting both the bundle and its receipt.
 
 ### Option C: Via FastAPI Endpoint (from Web UI)
 `POST /api/jobs/{job_id}/tailor/resume` and `POST /api/jobs/{job_id}/tailor/cover-letter` each generate one type and update document availability in the DoorKnock UI.
@@ -153,7 +158,7 @@ uv run python -m app.tailor.cli --jd-file <PATH_TO_JD_FILE> --company "<COMPANY>
 ## Output Artifacts
 All generated files are saved under:
 ```
-workspace/applications/YYYY-MM-DD-[company]-[position]-[job-key]/
+workspace/applications/application-[application-key-sha256]/
 ├── resume/
 │   └── v001/[Candidate_Name]_Resume_[Company].pdf (+ .typ and workspace-metadata.json)
 ├── cover-letter/
@@ -161,3 +166,5 @@ workspace/applications/YYYY-MM-DD-[company]-[position]-[job-key]/
 └── workspace-metadata.json (latest published version of each type)
 ```
 Each type increments separately. Existing paired `versions/vNNN/` files remain readable.
+
+New application directories use a stable key digest, including before the first preview is published, so cross-day resume/letter preparation shares one workspace. Existing identified directories are reused without moving them. New-format versions become visible to the document resolver only after the latest index atomically records that exact version and filename; an uncommitted or orphaned version folder is not a published document. Keep compilation receipts and index files intact; do not recover an interrupted publication by manually copying a PDF into a version folder.
