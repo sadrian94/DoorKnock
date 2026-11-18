@@ -1,7 +1,7 @@
 ---
 name: doorknock-interview
-description: Practice one spoken interview answer at a time, then run a short mock interview for a selected DoorKnock job. Use verified candidate evidence and keep concise per-job progress in the ignored workspace.
-version: 1.2.1
+description: Prepare role-specific interview materials, coach spoken answers, and run short mock interviews for a selected DoorKnock job.
+version: 1.3.0
 author: DoorKnock Team
 platforms: [windows, macos, linux]
 metadata:
@@ -17,7 +17,29 @@ Use this skill when the user wants to prepare, practice, or receive live intervi
 
 1. Resolve **one** job. For an ID, read it with `backend.app.crud.get_job_by_id(job_id)` or `GET /api/jobs/{job_id}`. For a company or title, search job IDs, companies, and titles across **all** job statuses, including applications in progress. If more than one job fits, show the short matches and ask which one. Do not choose silently. If no stored job is available, ask for the role details and practice in this conversation without creating a per-job file.
 2. Read the selected job description, relevant application materials, and `workspace/master_resume/master_evidence.yaml`. If the evidence file is missing, use only facts the user supplies or confirms. A requirement in the job posting is not evidence that the candidate has done that work. Treat interview format or company claims that were not confirmed as uncertain.
-3. For practice, load `workspace/interviews/<job_id>/progress.yaml` if it exists. Validate it as described below before relying on it. Offer **one-question practice** or a **five-question mock** only if the user has not already chosen a mode. For live support, reuse the selected job and confirmed context and go directly to the live support rules; do not interrupt the call with mode selection or progress-file setup. Begin promptly.
+3. Match the requested scope: preparation, documents, practice, or live support. For practice, load `workspace/interviews/<job_id>/progress.yaml` if it exists. Validate it as described below before relying on it. Offer **one-question practice** or a **five-question mock** only if the user has not already chosen a mode. For live support, reuse the selected job and confirmed context and go directly to the live support rules; do not interrupt the call with mode selection or progress-file setup. Begin promptly.
+
+## Role-specific preparation and materials
+
+For broad interview preparation, propose a useful combination of the following, adapting depth to the role, interview stage, time available, and the user's request. A focused request authorizes only its requested deliverable, not every document or an external action. Reuse prior work and distinguish the actual submitted resume and cover letter, if confirmed, from later or merely generated versions.
+
+- **Role research:** Explain the job's nature, responsibilities, likely workflows, tools, skills and employer requirements versus preferences. Map relevant candidate evidence and meaningful gaps without treating unrecorded experience as absent. Separate the saved posting, screening notes, research and inference; cite sources, label non-verbatim summaries and verify current employer or product facts when relevant. General product capabilities do not establish an employer's configuration. Research alone does not authorize saving research or contacts or importing jobs; persist research only when the user asks to save it or explicitly requests a document incorporating it.
+- **Behavioral story collection:** Map likely question types to a manageable set of distinct experiences; reuse an event from different angles when appropriate and make clear when it is the same event. For each story preserve its confirmation status, complete natural spoken answer, Situation, Task, Action and Result, role connection, and realistic follow-up questions. Include a question-to-story index. Keep factual-verification prompts separate from questions interviewers may ask. Do not present an unconfirmed illustrative draft as a real incident; a user's approval of style or realism does not confirm its details.
+- **Non-STAR interview notes:** Align the introduction, motivation, job-specific technical questions, hypothetical scenarios, submitted resume and cover letter, potential follow-ups, questions for the panel and closing with the role. Preserve a user-approved opening when reused, unless the user asks to change it. Distinguish actual experience from a proposed approach; answer product-specific experience questions at their exact scope.
+- **Memory and practice aids:** When useful, add concise story cues or a separate quick reference, while retaining the full reference. Coach the candidate to remember a story's real situation, judgment, actions and result and adapt the wording naturally, rather than invent facts or memorize every sentence.
+
+Ground every material candidate claim in confirmed evidence or the user's own statements. When the user wants a plausible story draft to correct, supply a complete illustrative draft and clearly mark unconfirmed details; invite correction without turning preparation into a long questionnaire. Do not infer personal ownership, results, metrics or employer priorities. Assess coverage separately from readiness to answer and handle follow-ups; once coverage is adequate, prioritize focused alignment and practice over adding documents indefinitely.
+
+### Develop stories together
+
+By default, work on **one story at a time** when collaboratively developing a story library, unless the user requests a batch or a different pace:
+
+1. Identify the question type from the role and propose a varied, relevant experience or story lead; do not repeatedly reuse the same event when alternatives would add value. If the user wants a role-first blueprint, map question types before choosing evidence.
+2. Take the initiative to draft a complete, compelling story with context, challenge, candidate action, reasoning and result, drawing on the candidate's known background rather than merely relabeling resume bullets. Clearly mark any proposed or inferred incident, action, result or metric as unconfirmed; a plausible draft is not evidence that it happened.
+3. Discuss the draft with the user and revise it around their actual experience. Offer concrete suggestions or memory cues instead of asking them to invent the story from scratch; ask a focused question only where needed. Preserve exactly what the user confirmed: liking a draft or saying it feels realistic does not confirm the event or every detail.
+4. Once the user is comfortable with the current story or chooses to move on, proceed to the next. Keep uncertain details labeled and use an actual incident for behavioral answers. Save story notes only within the requested and authorized scope; do not update the evidence bank or application stage. When the user requests a collection, integrate the aligned stories and any clearly marked working drafts without erasing their confirmation status.
+
+When an artifact is requested, use the user's requested formats; otherwise default to a readable, selectable-text PDF and offer editable Markdown when useful. Save requested preparation artifacts for a stored job in its relevant ignored application workspace, preserve existing documents and story drafts, and do not write candidate facts to tracked files. If no stored job exists, deliver an explicitly requested artifact from a private scratch location without creating a per-job record; do not import the job without authorization. Practice alone does not authorize saving full answers, transcripts or new preparation documents; save only the concise progress described below. Before delivery check the requested sections and evidence boundaries, extract PDF text, and visually inspect representative pages, including mixed-language text and status warnings. If both Markdown and PDF are requested, verify their complete contents match. A preparation document does not update application status, schedule an interview, send a message, or imply an interview outcome.
 
 ## One-question practice
 
