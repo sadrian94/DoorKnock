@@ -19,6 +19,7 @@ DoorKnock is a candidate-agnostic, local job application and document tailoring 
 | Request | Skill | Boundary |
 | --- | --- | --- |
 | Audit or improve candidate evidence | `doorknock-refine` | Update `workspace/master_resume/master_evidence.yaml` only with confirmed claims; preserve a backup. |
+| Import HiringCafe Saved jobs into DoorKnock | `doorknock-import` | Deduplicate, save new jobs, and verify requested fit analysis and company recon on the existing records. |
 | Research a role, employer, or contact | `doorknock-scout` | Verify current role and source identity. Research alone does not import a job or save contacts. |
 | Tailor or review a resume or cover letter | `doorknock-tailor` | A review is diagnostic only. An edit must stay within the requested content or layout scope. |
 | Score or roast a resume for hiring appeal and ATS alignment | `doorknock-resume-roast-scorer` | Resume-only critique and complete rewrite proposals; no evidence-bank lookup, document publication, or state changes. |
