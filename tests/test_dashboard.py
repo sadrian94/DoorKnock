@@ -48,3 +48,82 @@ def test_dashboard_counts_full_population_and_deduplicates_attention(tmp_path, m
         ("applied-app", "status_check"),
         ("screen-app", "record_review"),
     ]
+    assert data["analytics"]["cohorts"]["30d"]["applications"] == 1
+    assert data["analytics"]["records_without_valid_applied_date"] == 1
+
+
+def test_dashboard_conversions_use_dated_cohorts_and_visible_history(tmp_path, monkeypatch):
+    db_path = tmp_path / "analytics.db"
+    monkeypatch.setenv("DOORKNOCK_DB_PATH", str(db_path))
+    monkeypatch.setattr("app.crud.local_today", lambda: date(2026, 4, 30))
+    monkeypatch.setattr("app.clock.get_time_settings", lambda: {"timezone": "America/Chicago"})
+    init_db(db_path)
+
+    records = [
+        ("screened", "closed", "rejected", "2026-04-01"),
+        ("interview", "technical_interview", None, "2026-04-05"),
+        ("offer", "closed", "offer_accepted", "2026-02-15"),
+        ("older", "closed", "rejected", "2025-12-01"),
+        ("recent", "applied", None, "2026-04-28"),
+        ("snapshot", "recruiter_screen", None, "2026-04-08"),
+        ("no-date", "recruiter_screen", None, None),
+        ("pre-application", "applied", None, "2026-04-10"),
+        ("saved", "saved", None, None),
+        ("invalid", "applied", None, "not a date"),
+    ]
+    events = [
+        ("screened", "interview_scheduled", "recruiter_screen", "2026-04-04T02:00:00+00:00", '{"due_date":"2026-04-09"}'),
+        ("screened", "interview_scheduled", "technical_interview", "2026-04-08", None),
+        ("screened", "interview_completed", None, "2026-04-09", None),
+        ("screened", "interview_completed", "recruiter_screen", "2026-04-09", None),
+        ("screened", "stage_updated", "closed", "2026-04-22", '{"outcome":"rejected"}'),
+        ("interview", "stage_change", "technical_interview", "2026-04-10", None),
+        ("interview", "interview_completed", None, "2026-04-14", '{"_deleted_at":"2026-04-16"}'),
+        ("offer", "stage_updated", "closed", "2026-03-01", '{"outcome":"offer_accepted"}'),
+        ("no-date", "interview_completed", "recruiter_screen", "2026-04-14", None),
+        ("pre-application", "interview_scheduled", "recruiter_screen", "2026-04-08", None),
+        ("pre-application", "stage_change", "offer", "2026-05-04", None),
+        ("recent", "assessment_assigned", "assessment", "2026-04-29", None),
+    ]
+    with get_db(db_path) as conn:
+        conn.executemany(
+            "INSERT INTO jobs (id, title, company) VALUES (?, 'Synthetic role', 'Example')",
+            [(f"job-{key}",) for key, *_ in records],
+        )
+        conn.executemany(
+            "INSERT INTO applications (id, job_id, current_stage, outcome, applied_date) VALUES (?, ?, ?, ?, ?)",
+            [(key, f"job-{key}", *rest) for key, *rest in records],
+        )
+        conn.executemany(
+            """INSERT INTO timeline_events (id, application_id, event_type, to_stage, occurred_at, metadata, title)
+               VALUES (?, ?, ?, ?, ?, ?, 'Synthetic event')""",
+            [(str(index), *event) for index, event in enumerate(events)],
+        )
+        conn.commit()
+
+    response = TestClient(app).get("/api/pipeline/dashboard")
+    assert response.status_code == 200
+    analytics = response.json()["analytics"]
+    assert analytics["through_date"] == "2026-04-30"
+    assert analytics["records_without_valid_applied_date"] == 2
+    assert analytics["dated_records_with_unverified_milestones"] == 1
+    assert analytics["cohorts"]["30d"] == {
+        "start_date": "2026-04-01", "applications": 5, "with_interview": 2,
+        "with_completed_interview": 1, "with_offer": 0, "median_days_to_interview": 3.5,
+    }
+    assert analytics["cohorts"]["90d"] == {
+        "start_date": "2026-01-31", "applications": 6, "with_interview": 2,
+        "with_completed_interview": 1, "with_offer": 1, "median_days_to_interview": 3.5,
+    }
+    assert analytics["cohorts"]["all"]["applications"] == 7
+
+
+def test_dashboard_empty_cohort_has_no_time_to_interview(tmp_path, monkeypatch):
+    db_path = tmp_path / "empty.db"
+    monkeypatch.setenv("DOORKNOCK_DB_PATH", str(db_path))
+    init_db(db_path)
+    result = TestClient(app).get("/api/pipeline/dashboard")
+    assert result.status_code == 200
+    for cohort in result.json()["analytics"]["cohorts"].values():
+        assert cohort["applications"] == cohort["with_interview"] == 0
+        assert cohort["median_days_to_interview"] is None

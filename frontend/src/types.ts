@@ -125,6 +125,35 @@ export interface KanbanBoardResponse {
   total_applications: number;
 }
 
+export type ApplicationCohortRange = '30d' | '90d' | 'all';
+
+export interface ApplicationCohort {
+  start_date: string | null;
+  applications: number;
+  with_interview: number;
+  with_completed_interview: number;
+  with_offer: number;
+  median_days_to_interview: number | null;
+}
+
+export interface ApplicationAnalytics {
+  through_date: string;
+  cohorts: Record<ApplicationCohortRange, ApplicationCohort>;
+  records: ApplicationAnalyticsRecord[];
+  records_without_valid_applied_date: number;
+  dated_records_with_unverified_milestones: number;
+}
+
+export type ApplicationMilestone = 'interview' | 'completed' | 'offer';
+
+export interface ApplicationAnalyticsRecord {
+  job_id: string;
+  company: string;
+  title: string;
+  applied_date: string;
+  milestones: Partial<Record<ApplicationMilestone, string>>;
+}
+
 export interface DashboardSummary {
   saved_jobs: number;
   submitted: number;
@@ -133,6 +162,7 @@ export interface DashboardSummary {
   status_checks_due: number;
   stage_counts: Record<string, number>;
   weekly_applications: { week_start: string; count: number }[];
+  analytics: ApplicationAnalytics;
   attention_items: NextAction[];
   scheduled_items?: NextAction[];
 }

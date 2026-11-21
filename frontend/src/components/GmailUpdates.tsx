@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GmailMessagePreview } from './GmailMessagePreview';
-import { Mail, ArrowUpRight, Check, ChevronRight, Search, Undo2 } from 'lucide-react';
+import { Mail, ArrowUpRight, Check, ChevronLeft, ChevronRight, Search, Undo2 } from 'lucide-react';
 import { useTimeSettings } from '../timeSettings';
 import { calendarDay, formatDate, formatDateTime } from '../time';
 import { advanceScanProgress, readScanProgress, scanProgressFresh, writeScanProgress } from '../gmailScanProgress';
 import type { ScanBatch, ScanProgress } from '../gmailScanProgress';
 import { applicationChoices, mergeReviews, nextReviewId, readReviewWorkspace, writeReviewWorkspace } from '../gmailReviewWorkspace';
 import type { GmailApplication, GmailReview, ReviewChoice, ReviewView, ReviewWorkspace } from '../gmailReviewWorkspace';
+import { DashboardWorkspace, workspaceButton } from './DashboardWorkspace';
 
 const eventLabels: Record<string, string> = {
   application_received: 'Application received', recruiter_screen_scheduled: 'Recruiter screen scheduled',
@@ -46,6 +47,9 @@ type ReviewPage = { reviews: GmailReview[]; applications: GmailApplication[]; pe
 type Props = { onApplicationsChanged: () => Promise<void>; onOpenSettings: () => void };
 export const GmailUpdates: React.FC<Props> = ({ onApplicationsChanged, onOpenSettings }) => {
   const { settings } = useTimeSettings();
+  const [entry, setEntry] = useState<HTMLButtonElement | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [originals, setOriginals] = useState<Record<string, ReviewChoice>>({});
   const [initial] = useState<ReviewWorkspace>(() => {
     try { return readReviewWorkspace(window.sessionStorage); } catch { return { view: 'pending', selectedId: null, choices: {} }; }
   });
@@ -156,10 +160,23 @@ export const GmailUpdates: React.FC<Props> = ({ onApplicationsChanged, onOpenSet
   }, []);
 
   function choose(item: GmailReview) {
-    setSelectedId(item.message_id); setChangingApplication(false); setQuery('');
+    setSelectedId(item.message_id); setChangingApplication(false); setQuery(''); setShowDetail(true);
   }
   function updateChoice(update: Partial<ReviewChoice>) {
-    if (selected && choice) setChoices(current => ({ ...current, [selected.message_id]: { ...choice, ...update } }));
+    if (!selected || !choice) return;
+    const id = selected.message_id;
+    if (Object.keys(update).some(key => key !== 'editing' && update[key as keyof ReviewChoice] !== choice[key as keyof ReviewChoice])) {
+      setOriginals(current => current[id] ? current : { ...current, [id]: { ...choice, editing: false } });
+    }
+    setChoices(current => ({ ...current, [id]: { ...choice, ...update } }));
+  }
+  function clearOriginal(id: string) {
+    setOriginals(current => {
+      const next = { ...current }; delete next[id]; return next;
+    });
+  }
+  function discardDrafts() {
+    setChoices(current => ({ ...current, ...originals })); setOriginals({}); setChangingApplication(false); setQuery('');
   }
   async function changeView(target: ReviewView) {
     setView(target); setSelectedId(null); setChangingApplication(false); setQuery('');
@@ -178,6 +195,7 @@ export const GmailUpdates: React.FC<Props> = ({ onApplicationsChanged, onOpenSet
           outcome: action === 'progress' && choice?.stage === 'closed' ? choice.outcome || null : null }),
       }));
       committed = true;
+      clearOriginal(item.message_id);
       const nextId = nextReviewId(pages.pending, item.message_id);
       setLastUndo(item); setSelectedId(nextId); setChangingApplication(false); setQuery('');
       setPages(current => ({ ...current, pending: current.pending.filter(row => row.message_id !== item.message_id) }));
@@ -235,11 +253,20 @@ export const GmailUpdates: React.FC<Props> = ({ onApplicationsChanged, onOpenSet
   const searchResults = selected ? applicationChoices(applications, selected.candidate_application_ids, query).slice(0, 20) : [];
   const progressValid = Boolean(choice?.stage) && (!datedStages.includes(choice?.stage || '') || Boolean(choice?.dueDate)) && (choice?.stage !== 'closed' || Boolean(choice?.outcome));
 
-  return <section aria-label="Gmail application updates" className="min-w-0 overflow-hidden rounded-2xl border border-ui-line-soft bg-ui-panel/70">
+  return <>
+    <button id="dashboard-gmail" data-workspace-entry="gmail-workspace" type="button" aria-haspopup="dialog" aria-controls="gmail-workspace"
+      onClick={event => { setEntry(event.currentTarget); setShowDetail(false); }}
+      className="flex w-full items-center gap-2 rounded-2xl border border-ui-line-soft bg-ui-panel/70 px-4 py-3 text-left hover:bg-ui-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ink-amber-400">
+      <Mail className="h-4 w-4 shrink-0 text-ui-ink-amber-400" aria-hidden="true" /><span className="min-w-0 flex-1 text-sm font-semibold text-ui-heading">Gmail updates</span>
+      <span className="shrink-0 text-xs text-ui-muted">{loading ? 'Checking…' : reconnect ? 'Reconnect' : connected || counts.pending > 0 ? `${counts.pending} to review` : 'Setup needed'}</span><ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-ui-muted" />
+    </button>
+    <DashboardWorkspace id="gmail-workspace" title="Gmail updates" description="Review email evidence and confirm changes without leaving the Dashboard."
+      open={!!entry} trigger={entry} busy={!!(reviewBusy || scanBusy)} dirty={Object.keys(originals).length > 0} onClose={() => setEntry(null)} onDiscard={discardDrafts}>
+    {entry && <section aria-label="Gmail application updates" className="min-w-0">
     <header className="space-y-4 p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3"><Mail className="mt-1 h-5 w-5 shrink-0 text-ui-ink-amber-400" /><div>
-          <h3 className="font-semibold text-ui-heading">Gmail application updates</h3>
+          <h4 className="font-semibold text-ui-heading">Email review</h4>
           <p className="mt-1 text-xs text-ui-muted">{loading ? 'Checking connection…' : reconnect ? 'Reconnect Gmail to resume scanning' : connected ? 'Gmail connected' : configured ? 'Gmail not connected' : 'Gmail setup needed'}{checkedAt && ` · Checked ${formatDateTime(checkedAt, settings.timezone)}`}</p>
         </div></div>
         <button onClick={() => void scan('latest')} disabled={locked || !connected || !validRange} className={primaryClass}>{scanBusy === 'latest' ? 'Checking latest…' : 'Check latest emails'}</button>
@@ -247,7 +274,7 @@ export const GmailUpdates: React.FC<Props> = ({ onApplicationsChanged, onOpenSet
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ui-muted">
         {hasOlder && <button onClick={() => void scan('older')} disabled={locked || !connected} className={textButton}>{scanBusy === 'older' ? 'Reading older emails…' : 'Continue older emails'} <ChevronRight className="inline h-3 w-3" /></button>}
         <span>Last {days} days · Up to {limit} messages per batch</span>
-        <button onClick={onOpenSettings} disabled={Boolean(reviewBusy)} className="inline-flex items-center gap-1 hover:text-ui-heading disabled:opacity-50">Connection settings <ArrowUpRight className="h-3 w-3" /></button>
+        <button onClick={() => { setEntry(null); onOpenSettings(); }} disabled={Boolean(reviewBusy || scanBusy) || Object.keys(originals).length > 0} className="inline-flex items-center gap-1 hover:text-ui-heading disabled:opacity-50">Connection settings <ArrowUpRight className="h-3 w-3" /></button>
       </div>
       <details className="text-xs text-ui-muted"><summary className="cursor-pointer hover:text-ui-heading">Scan options and results</summary>
         <fieldset disabled={locked || hasOlder} className="mt-3 flex flex-wrap gap-3 disabled:opacity-50">
@@ -261,12 +288,12 @@ export const GmailUpdates: React.FC<Props> = ({ onApplicationsChanged, onOpenSet
       {!loading && !connected && <p className="text-sm text-ui-body">{reconnect ? 'Authorization is no longer valid. Reconnect in Settings.' : 'Connect Gmail in Settings to check for updates.'}</p>}
     </header>
     {(message || lastUndo) && <div role="status" className="flex flex-wrap items-center justify-between gap-3 border-t border-ui-line-soft bg-ui-page/50 px-5 py-3 text-sm text-ui-secondary"><span>{message}</span>{lastUndo && <button onClick={() => void undo(lastUndo)} disabled={locked} className={`inline-flex items-center gap-1 ${textButton}`}><Undo2 className="h-3.5 w-3.5" /> Undo last decision</button>}</div>}
-    <div className="flex flex-wrap items-center justify-between gap-3 border-y border-ui-line-soft px-5 py-3">
-      <nav aria-label="Email review status" className="flex gap-5">{(['pending', 'processed'] as const).map(target => <button key={target} aria-pressed={view === target} disabled={locked} onClick={() => void changeView(target)} className={`py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ink-amber-400 disabled:opacity-50 ${view === target ? 'font-semibold text-ui-heading' : 'text-ui-muted hover:text-ui-heading'}`}>{target === 'pending' ? 'Needs review' : 'Processed'} <span className="ml-1 tabular-nums">{counts[target]}</span></button>)}</nav>
+    <div className={`flex-wrap items-center justify-between gap-3 border-y border-ui-line-soft px-5 py-3 ${showDetail && selected ? 'hidden md:flex' : 'flex'}`}>
+      <nav aria-label="Email review status" className="flex gap-5">{(['pending', 'processed'] as const).map(target => <button key={target} aria-pressed={view === target} disabled={locked} onClick={() => { setShowDetail(false); void changeView(target); }} className={`py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ink-amber-400 disabled:opacity-50 ${view === target ? 'font-semibold text-ui-heading' : 'text-ui-muted hover:text-ui-heading'}`}>{target === 'pending' ? 'Needs review' : 'Processed'} <span className="ml-1 tabular-nums">{counts[target]}</span></button>)}</nav>
       <button disabled={locked} onClick={() => void refresh().catch(error => setMessage(error instanceof Error ? error.message : 'Could not refresh'))} className="text-xs text-ui-muted hover:text-ui-heading disabled:opacity-50">Refresh list</button>
     </div>
-    {loading ? <div className="grid gap-3 p-5 sm:grid-cols-3" aria-label="Loading email reviews">{[0, 1, 2].map(key => <div key={key} className="h-24 animate-pulse rounded-lg bg-ui-raised/50" />)}</div> : !rows.length ? <div className="px-5 py-10 text-center"><Check className="mx-auto mb-3 h-6 w-6 text-ui-muted" /><p className="font-medium text-ui-heading">{view === 'pending' ? 'No emails waiting for review' : 'No processed emails yet'}</p><p className="mt-2 text-sm text-ui-muted">{view === 'pending' ? 'Check latest emails whenever you want to look for new updates.' : 'Saved links and dismissed emails will appear here.'}</p></div> : <div className="grid min-w-0 lg:grid-cols-[minmax(15rem,0.85fr)_minmax(0,1.65fr)]" aria-busy={Boolean(reviewBusy) || reviewsLoading}>
-      <aside ref={queueRef} aria-label="Email review queue" className="max-h-64 min-w-0 overflow-y-auto border-b border-ui-line-soft p-2 lg:max-h-[38rem] lg:border-b-0 lg:border-r">
+    {loading ? <div className="grid gap-3 p-5 sm:grid-cols-3" aria-label="Loading email reviews">{[0, 1, 2].map(key => <div key={key} className="h-24 animate-pulse rounded-lg bg-ui-raised/50" />)}</div> : !rows.length ? <div className="px-5 py-10 text-center"><Check className="mx-auto mb-3 h-6 w-6 text-ui-muted" /><p className="font-medium text-ui-heading">{view === 'pending' ? 'No emails waiting for review' : 'No processed emails yet'}</p><p className="mt-2 text-sm text-ui-muted">{view === 'pending' ? 'Check latest emails whenever you want to look for new updates.' : 'Saved links and dismissed emails will appear here.'}</p></div> : <div className="grid min-w-0 md:grid-cols-[minmax(12rem,1fr)_minmax(0,2.2fr)]" aria-busy={Boolean(reviewBusy) || reviewsLoading}>
+      <aside ref={queueRef} aria-label="Email review queue" className={`min-w-0 overflow-y-auto border-ui-line-soft p-2 md:block md:max-h-[65dvh] md:border-r ${showDetail ? 'hidden' : ''}`}>
         <p className="px-3 py-2 text-xs text-ui-muted">{view === 'pending' ? 'Newest emails first' : 'Most recently processed first'}</p>
         <ul className="space-y-1">{rows.map(item => <li key={item.message_id}><button onClick={() => choose(item)} disabled={locked} aria-pressed={selected?.message_id === item.message_id} className={`w-full min-w-0 rounded-lg px-3 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ink-amber-400 disabled:opacity-60 ${selected?.message_id === item.message_id ? 'bg-ui-fill-amber-900/20 text-ui-heading' : 'text-ui-body hover:bg-ui-raised/60'}`}>
           <span className="block break-words text-sm font-semibold">{rowHeading(item)}</span>
@@ -276,7 +303,8 @@ export const GmailUpdates: React.FC<Props> = ({ onApplicationsChanged, onOpenSet
         </button></li>)}</ul>
         {pagination[view].hasMore && <button disabled={locked} onClick={() => void loadReviews(view, true).catch(error => setMessage(error instanceof Error ? error.message : 'Could not load more'))} className={`m-2 ${buttonClass}`}>Load more emails</button>}
       </aside>
-      {selected && <article aria-label="Selected email review" className="min-w-0 space-y-5 p-5 sm:p-6">
+      {selected && <article aria-label="Selected email review" className={`min-w-0 space-y-5 p-4 sm:p-6 md:block ${showDetail ? '' : 'hidden'}`}>
+        <button type="button" onClick={() => setShowDetail(false)} disabled={locked} className={`${workspaceButton} inline-flex items-center gap-1 md:hidden`}><ChevronLeft className="h-3 w-3" /> Back to email queue</button>
         <div><p className="text-xs text-ui-muted">{formatDateTime(selected.received_at, settings.timezone)}</p><h4 className="mt-2 text-lg font-semibold text-ui-heading">{eventLabels[selected.event_code] || 'Related message'}</h4><a href={originalUrl(selected)} target="_blank" rel="noopener noreferrer" className={`mt-2 inline-flex items-center gap-1 ${textButton}`}>Open original email in Gmail <ArrowUpRight className="h-3.5 w-3.5" /></a></div>
         <GmailMessagePreview key={selected.message_id} messageId={selected.message_id} connected={connected} />
         <div className="border-t border-ui-line-soft pt-5"><p className="text-xs text-ui-muted">{view === 'pending' ? 'Application to link' : 'Application'}</p>
@@ -297,5 +325,7 @@ export const GmailUpdates: React.FC<Props> = ({ onApplicationsChanged, onOpenSet
         {view === 'processed' && <div className="space-y-3 border-t border-ui-line-soft pt-5"><p className="text-sm font-medium text-ui-heading">{statusLabels[selected.status] || 'Processed'}{selected.resolved_at && <span className="mt-1 block text-xs font-normal text-ui-muted">{formatDateTime(selected.resolved_at, settings.timezone)}</span>}</p>{selected.can_undo ? <button disabled={locked} onClick={() => void undo(selected)} className={`inline-flex items-center gap-2 ${buttonClass}`}><Undo2 className="h-4 w-4" /> Undo decision</button> : <p className="text-xs text-ui-muted">This older decision has no automatic undo record.</p>}</div>}
       </article>}
     </div>}
-  </section>;
+  </section>}
+  </DashboardWorkspace>
+  </>;
 };

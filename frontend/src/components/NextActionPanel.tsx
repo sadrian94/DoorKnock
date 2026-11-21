@@ -27,9 +27,10 @@ const DIRECT_ACTIONS = ['followup', 'status_check', 'thank_you', 'assessment', '
 
 export type RecordedProgress = { applicationId: string; eventId?: string; eventType: string };
 
-export function NextActionPanel({ action, currentStage, onRecorded, onSaved, onBusyChange, onReviewChange, compact = false, advance = false, disabled = false }: { action: NextAction; currentStage: string; onRecorded: (progress?: RecordedProgress) => void | Promise<void>; onSaved?: (progress: RecordedProgress) => void; onBusyChange?: (busy: boolean) => void; onReviewChange?: (review: boolean) => void; compact?: boolean; advance?: boolean; disabled?: boolean }) {
+export function NextActionPanel({ action, currentStage, onRecorded, onSaved, onBusyChange, onReviewChange, onDirtyChange, compact = false, advance = false, disabled = false }: { action: NextAction; currentStage: string; onRecorded: (progress?: RecordedProgress) => void | Promise<void>; onSaved?: (progress: RecordedProgress) => void; onBusyChange?: (busy: boolean) => void; onReviewChange?: (review: boolean) => void; onDirtyChange?: (dirty: boolean) => void; compact?: boolean; advance?: boolean; disabled?: boolean }) {
   const { settings } = useTimeSettings();
   const [open, setOpen] = useState(false);
+  const [edited, setEdited] = useState(false);
   const [reviewAction, setReviewAction] = useState<NextAction | null>(null);
   const shownAction = reviewAction || action;
   const suggestedEvent = defaultProgressEvent(currentStage, shownAction.kind);
@@ -63,6 +64,7 @@ export function NextActionPanel({ action, currentStage, onRecorded, onSaved, onB
 
   useEffect(() => { onBusyChange?.(busy); return () => onBusyChange?.(false); }, [busy, onBusyChange]);
   useEffect(() => { onReviewChange?.(!!reviewAction); return () => onReviewChange?.(false); }, [reviewAction, onReviewChange]);
+  useEffect(() => { onDirtyChange?.(open && edited); return () => onDirtyChange?.(false); }, [open, edited, onDirtyChange]);
 
   useEffect(() => {
     setReviewAction(null);
@@ -71,7 +73,7 @@ export function NextActionPanel({ action, currentStage, onRecorded, onSaved, onB
   }, [action]);
 
   function start(eventType: string, isQuick: boolean) {
-    setEvent(eventType); setQuick(isQuick); setOpen(true);
+    setEvent(eventType); setQuick(isQuick); setEdited(false); setOpen(true);
     setFromLater(eventType === 'reminder_set' && isQuick);
     setOccurred(localInputNow());
     setDeadline(eventType === 'reminder_set' ? defaultReminderDate(settings.timezone) : '');
@@ -106,6 +108,7 @@ export function NextActionPanel({ action, currentStage, onRecorded, onSaved, onB
       if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Check the event and dates.');
       const progress = { applicationId, eventId: result.recorded_event_id, eventType: event };
       setPendingProgress(progress);
+      setEdited(false);
       onSaved?.(progress);
       if ((event === 'reminder_set' && fromLater && result.postponement_count >= 2
            && !['closed', 'paused'].includes(result.state))
@@ -184,7 +187,7 @@ export function NextActionPanel({ action, currentStage, onRecorded, onSaved, onB
           <p className="mt-1">{planned.condition}</p>
         </li>)}</ul>
       </div>}
-      {open && <form onSubmit={(e) => { e.preventDefault(); if (!busy && !disabled) void record(); }} className="mt-4 space-y-3 border-t border-ui-line pt-4">
+      {open && <form onChange={() => setEdited(true)} onSubmit={(e) => { e.preventDefault(); if (!busy && !disabled) void record(); }} className="mt-4 space-y-3 border-t border-ui-line pt-4">
         <fieldset disabled={busy || disabled} className="space-y-3">
         <p className="text-xs text-ui-muted">{quick ? 'Confirm what actually happened and its date before saving.' : 'Choose what happened. Saving updates your stage, timeline and next action together.'}</p>
         <div className="grid gap-3 sm:grid-cols-2">

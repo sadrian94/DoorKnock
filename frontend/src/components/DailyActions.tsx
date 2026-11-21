@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { ArrowUpRight, CalendarClock } from 'lucide-react';
+import { ArrowUpRight, ChevronLeft } from 'lucide-react';
 import type { Job, JobDocumentsInfo, NextAction } from '../types';
-import { calendarDay, formatDate } from '../time';
+import { formatDate } from '../time';
 import { useTimeSettings } from '../timeSettings';
 import { nextSelection, partitionActions } from '../dailyQueue';
 import { NextActionPanel } from './NextActionPanel';
 import type { RecordedProgress } from './NextActionPanel';
+import { DashboardWorkspace, workspaceButton } from './DashboardWorkspace';
+import { TodayTaskList } from './TodayTaskList';
 
 const button = 'rounded-lg border border-ui-line-strong px-3 py-2 text-xs text-ui-secondary hover:bg-ui-raised disabled:opacity-50';
 const external = (value?: string) => {
@@ -13,13 +15,13 @@ const external = (value?: string) => {
   catch { return undefined; }
 };
 
-export function DailyActions({ items, refreshToken, onSelectJob, onRecorded }: {
-  items: NextAction[]; refreshToken?: unknown; onSelectJob: (jobId: string) => void; onRecorded: () => Promise<void>;
+export function DailyActions({ groups, today, refreshToken, onSelectJob, onRecorded }: {
+  groups: ReturnType<typeof partitionActions>; today: string; refreshToken?: unknown; onSelectJob: (jobId: string) => void; onRecorded: () => Promise<void>;
 }) {
   const { settings } = useTimeSettings();
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 60000); return () => window.clearInterval(timer); }, []);
-  const groups = partitionActions(items, settings.timezone, now);
+  const [entry, setEntry] = useState<HTMLElement | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [view, setView] = useState<'today' | 'upcoming'>('today');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
@@ -31,11 +33,16 @@ export function DailyActions({ items, refreshToken, onSelectJob, onRecorded }: {
   const [workingCopies, setWorkingCopies] = useState<Record<string, string>>({});
   const [prepared, setPrepared] = useState<Record<string, boolean>>({});
   const visible = groups[view];
-  const navigationLocked = saving || reviewing || undoBusy;
+  const busy = saving || reviewing || undoBusy;
+  const navigationLocked = busy || dirty;
   const selected = visible.find(item => item.application_id === selectedId) || visible[0];
-  const today = calendarDay(now.toISOString(), settings.timezone)!;
+
   const dateLabel = (item: NextAction) => !item.date ? 'Confirm details'
     : `${item.date < today ? 'Overdue · ' : item.date === today ? 'Today · ' : ''}${formatDate(item.date, settings.timezone, { month: 'short', day: 'numeric' })}`;
+
+  function openQueue(id: string | null, trigger: HTMLElement) {
+    setView('today'); setSelectedId(id); setShowDetail(id !== null); setEntry(trigger);
+  }
 
   function saved(progress: RecordedProgress) {
       setUndo(progress.eventId ? progress : undefined);
@@ -65,25 +72,32 @@ export function DailyActions({ items, refreshToken, onSelectJob, onRecorded }: {
     finally { setUndoBusy(false); }
   }
 
-  return <section aria-label="Daily workspace" className="overflow-hidden rounded-2xl border border-ui-line-soft bg-ui-panel/70">
-    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-ui-line-soft p-5">
+  return <section aria-labelledby="today-work-title" className="min-w-0">
+    <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+      <div><h3 id="today-work-title" className="text-xl font-semibold text-ui-heading">Today’s work</h3>
+        <p className="mt-1 text-xs text-ui-muted">{groups.today.length} due or to review · {groups.overdue} overdue</p></div>
+      <button type="button" className={workspaceButton} aria-haspopup="dialog" aria-controls="daily-workspace" data-workspace-entry="daily-workspace" onClick={event => openQueue(null, event.currentTarget)}>Open work queue</button>
+    </div>
+    <TodayTaskList items={groups.today} dateLabel={dateLabel} onOpen={openQueue} />
+    <DashboardWorkspace id="daily-workspace" title="Today’s work" open={!!entry} trigger={entry} busy={busy} dirty={dirty} onClose={() => setEntry(null)}
+      description="Record what happened, then move on to the next task.">
+    {entry && <div className="min-w-0">
+    <div className={`flex-wrap items-center justify-between gap-3 border-b border-ui-line-soft px-4 py-3 sm:px-6 ${showDetail && selected ? 'hidden md:flex' : 'flex'}`}>
       <div>
-        <h3 className="flex items-center gap-2 text-xl font-semibold text-ui-heading"><CalendarClock className="h-5 w-5 text-ui-ink-amber-400" /> Today’s work</h3>
         <p className="mt-2 text-xs text-ui-muted">{formatDate(today, settings.timezone, { weekday: 'long', month: 'long', day: 'numeric' })} · {groups.overdue} overdue · {settings.timezone}</p>
-        <p className="mt-1 text-xs text-ui-muted">Choose a task, review its context, then record what happened.</p>
       </div>
-      <div className="flex gap-2" aria-label="Task filters">
+      <div className="flex flex-wrap gap-2" aria-label="Task filters">
         <button disabled={navigationLocked} className={button} aria-pressed={view === 'today'} onClick={() => { setView('today'); setSelectedId(null); }}>Today & review ({groups.today.length})</button>
         <button disabled={navigationLocked} className={button} aria-pressed={view === 'upcoming'} onClick={() => { setView('upcoming'); setSelectedId(null); }}>Upcoming ({groups.upcoming.length})</button>
       </div>
     </div>
     {notice && <div role="status" className="flex flex-wrap items-center justify-between gap-2 border-b border-ui-line-soft bg-ui-fill-amber-950/20 px-5 py-3 text-xs text-ui-body">
-      <span>{notice}</span>{undo?.eventId && <button disabled={undoBusy || saving} className={button} onClick={() => void undoLast()}>{undoBusy ? 'Undoing…' : 'Undo last update'}</button>}
+      <span>{notice}</span>{undo?.eventId && <button disabled={undoBusy || saving || dirty} className={button} onClick={() => void undoLast()}>{undoBusy ? 'Undoing…' : 'Undo last update'}</button>}
     </div>}
     {!selected ? <p className="p-8 text-sm text-ui-muted">{view === 'today' ? 'No actions due or records awaiting review. Check Upcoming for your next dates.' : 'No upcoming actions scheduled. Paused applications remain in your pipeline.'}</p>
-      : <div className="grid lg:grid-cols-[minmax(240px,0.8fr)_minmax(0,1.6fr)]">
-        <nav aria-label="Daily tasks" className="max-h-[32rem] overflow-y-auto border-b border-ui-line-soft lg:max-h-[48rem] lg:border-b-0 lg:border-r">
-          {visible.map(item => <button disabled={navigationLocked} key={item.application_id} onClick={() => setSelectedId(item.application_id)} aria-current={selected.application_id === item.application_id ? 'true' : undefined}
+      : <div className="grid md:grid-cols-[minmax(12rem,1fr)_minmax(0,2.2fr)]">
+        <nav aria-label="Daily tasks" className={`overflow-y-auto border-ui-line-soft md:block md:max-h-[70dvh] md:border-r ${showDetail ? 'hidden' : ''}`}>
+          {visible.map(item => <button disabled={navigationLocked} key={item.application_id} onClick={() => { setSelectedId(item.application_id); setShowDetail(true); }} aria-current={selected.application_id === item.application_id ? 'true' : undefined}
             className={`block w-full border-b border-ui-line-soft p-5 text-left transition hover:bg-ui-raised ${selected.application_id === item.application_id ? 'bg-ui-raised border-l-2 border-l-ui-ink-amber-400' : ''}`}>
             <span className="block text-xs font-medium text-ui-ink-amber-300">{dateLabel(item)}</span>
             <span className="mt-2 block text-sm font-semibold text-ui-heading">{item.company}</span>
@@ -91,21 +105,24 @@ export function DailyActions({ items, refreshToken, onSelectJob, onRecorded }: {
             <span className="mt-3 block text-xs text-ui-muted">{item.kind === 'record_review' ? 'Record review' : item.label}</span>
           </button>)}
         </nav>
-        <div className="min-w-0 p-5 sm:p-6">
+        <div className={`min-w-0 p-4 sm:p-6 md:block ${showDetail ? '' : 'hidden'}`}>
+          <button type="button" disabled={navigationLocked} onClick={() => setShowDetail(false)} className={`${workspaceButton} mb-4 inline-flex items-center gap-1 md:hidden`}><ChevronLeft className="h-3 w-3" /> Back to work queue</button>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0"><p className="text-xs font-medium text-ui-ink-amber-300">{dateLabel(selected)}</p><h4 className="mt-2 text-lg font-semibold text-ui-heading">{selected.label}</h4><p className="mt-1 text-sm text-ui-body">{selected.company} · {selected.title}</p></div>
-            <button disabled={navigationLocked} className={`${button} flex items-center gap-1`} onClick={() => onSelectJob(selected.job_id)}>Full details <ArrowUpRight className="h-3 w-3" /></button>
+            <button disabled={navigationLocked} className={`${button} flex items-center gap-1`} onClick={() => { setEntry(null); onSelectJob(selected.job_id); }}>Full details <ArrowUpRight className="h-3 w-3" /></button>
           </div>
           <p className="mt-4 text-sm text-ui-body">{selected.reason}</p>
           {selected.due_date && <p className="mt-2 text-sm font-medium text-ui-ink-amber-300">{selected.kind === 'interview' || selected.kind === 'interview_review' ? 'Confirmed interview' : 'Confirmed deadline'}: {formatDate(selected.due_date, settings.timezone, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>}
           <div className="mt-4 rounded-xl border border-ui-line-soft bg-ui-page/50 p-4">
-            <NextActionPanel key={`${selected.application_id}:${revision}`} compact advance disabled={undoBusy} action={selected} currentStage={selected.current_stage || 'applied'} onRecorded={recorded} onSaved={saved} onBusyChange={setSaving} onReviewChange={setReviewing} />
+            <NextActionPanel key={`${selected.application_id}:${revision}`} compact advance disabled={undoBusy} action={selected} currentStage={selected.current_stage || 'applied'} onRecorded={recorded} onSaved={saved} onBusyChange={setSaving} onReviewChange={setReviewing} onDirtyChange={setDirty} />
           </div>
           {reviewing && <p className="mt-2 text-xs text-ui-muted">Choose how to continue tracking before moving to another task, or undo this update.</p>}
           <TaskContext key={`${selected.application_id}:${revision}`} refreshToken={refreshToken} action={selected} copies={workingCopies} setCopy={(id, value) => setWorkingCopies(current => ({ ...current, [id]: value }))}
             prepared={prepared} setPrepared={(id, value) => setPrepared(current => ({ ...current, [id]: value }))} />
         </div>
       </div>}
+    </div>}
+    </DashboardWorkspace>
   </section>;
 }
 

@@ -5,6 +5,7 @@ from .clock import utc_now, local_today, local_date_of
 from typing import List, Dict, Any, Optional
 from .database import get_db
 from . import cadence
+from .analytics import application_analytics
 
 KANBAN_STAGES = [
     "saved",
@@ -142,7 +143,8 @@ def get_dashboard_summary() -> Dict[str, Any]:
             "SELECT COUNT(*) FROM jobs WHERE status IN ('saved', 'ready')"
         ).fetchone()[0]
         applications = conn.execute(
-            "SELECT current_stage, applied_date FROM applications"
+            """SELECT a.id, a.job_id, a.current_stage, a.outcome, a.applied_date, j.company, j.title
+               FROM applications a JOIN jobs j ON j.id = a.job_id"""
         ).fetchall()
         stage_counts = {stage: 0 for stage in KANBAN_STAGES}
         submitted = 0
@@ -155,11 +157,12 @@ def get_dashboard_summary() -> Dict[str, Any]:
                 continue
             submitted += 1
             applied_day = cadence.event_day(applied_date)
-            if not applied_day:
+            if not applied_day or applied_day > today:
                 continue
             week_start = (applied_day - timedelta(days=applied_day.weekday())).isoformat()
             if week_start in weeks:
                 weeks[week_start] += 1
+        analytics = application_analytics(conn, applications, today)
 
     attention_items = cadence.attention()
 
@@ -171,6 +174,7 @@ def get_dashboard_summary() -> Dict[str, Any]:
         "followups_due": sum(item['kind'] == 'followup' for item in attention_items),
         "status_checks_due": sum(item['kind'] == 'status_check' for item in attention_items),
         "stage_counts": stage_counts,
+        "analytics": analytics,
         "weekly_applications": [
             {"week_start": week, "count": count} for week, count in weeks.items()
         ],
